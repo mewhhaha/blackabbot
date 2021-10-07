@@ -4,7 +4,8 @@ dependencies:
 build: clean
 	mkdir -p build
 	go build -o ./build/run ./cmd/main.go 
-	zip build/function.zip build/run
+	cd build && \
+		zip function.zip run
 	rm ./build/run
 
 deploy:
