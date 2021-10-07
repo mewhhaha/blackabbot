@@ -12,7 +12,7 @@ deploy:
 	cd terraform \
 		&& terraform init \
 		&& terraform validate \
-		&& terraform apply
+		&& terraform apply --auto-approve
 
 clean:
 	rm -rf build
