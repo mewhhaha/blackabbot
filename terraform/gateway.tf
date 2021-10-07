@@ -6,7 +6,7 @@ resource "aws_apigatewayv2_api" "lambda" {
 resource "aws_apigatewayv2_stage" "lambda" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  name        = "serverless_lambda_stage"
+  name        = "blackabbot"
   auto_deploy = true
 
   access_log_settings {
@@ -39,7 +39,7 @@ resource "aws_apigatewayv2_integration" "blackabbot" {
 resource "aws_apigatewayv2_route" "blackabbot" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "GET /hello"
+  route_key = "GET /${var.telegram_bot_token}"
   target    = "integrations/${aws_apigatewayv2_integration.blackabbot.id}"
 }
 
