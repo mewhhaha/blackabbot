@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/aws/aws-lambda-go/events"
 	runtime "github.com/aws/aws-lambda-go/lambda"
@@ -27,7 +28,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	var result *telegram.Update
 	err := json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 400}, nil
+		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", err), StatusCode: 400}, nil
 	}
 
 	response := SendMessageMethodResponse{
