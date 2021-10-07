@@ -35,4 +35,4 @@ jobs:
       - name: Deploy lambda
         run: make deploy
         env:
-          TELEGRAM_BOT_API: ${{ secrets.BOT_API_KEY }}
+          TF_VAR_telegram_bot_token: ${{ secrets.BOT_API_KEY }}
