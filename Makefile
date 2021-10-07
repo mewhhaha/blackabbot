@@ -10,9 +10,9 @@ build: clean
 deploy:
 	set -e
 	cd terraform \
-		&& terraform init
-		&& terraform validate
-		&& terraform apply	
+		&& terraform init \
+		&& terraform validate \
+		&& terraform apply
 
 clean:
 	rm -rf build
