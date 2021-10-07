@@ -19,11 +19,16 @@ type SendMessageMethodResponse struct {
 	telegram.MessageConfig
 }
 
-func main() {
-	runtime.Start(HandleRequest)
+type AnswerInlineQueryMethodResponse struct {
+	MethodResponse
+	telegram.InlineConfig
 }
 
-func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func main() {
+	runtime.Start(handleRequest)
+}
+
+func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	result := &telegram.Update{}
 	err := json.Unmarshal([]byte(request.Body), result)
@@ -31,11 +36,19 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", err), StatusCode: 400}, nil
 	}
 
+	if result.Message != nil {
+		return handleMessage(result)
+	}
+
+	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
+}
+
+func handleMessage(update *telegram.Update) (events.APIGatewayProxyResponse, error) {
 	response := SendMessageMethodResponse{
 		MethodResponse: MethodResponse{Method: "sendMessage"},
 		MessageConfig: telegram.MessageConfig{
 			BaseChat: telegram.BaseChat{
-				ChatID: result.Message.Chat.ID,
+				ChatID: update.Message.Chat.ID,
 			},
 			Text: "Hello World!",
 		},
