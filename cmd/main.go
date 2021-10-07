@@ -2,24 +2,48 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 
 	"github.com/aws/aws-lambda-go/events"
 	runtime "github.com/aws/aws-lambda-go/lambda"
+	telegram "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func main() {
-	runtime.Start(handleRequest)
+type MethodResponse struct {
+	Method string `json:"method"`
 }
 
-func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Printf("Processing request data for request %s.\n", request.RequestContext.RequestID)
-	fmt.Printf("Body size = %d.\n", len(request.Body))
+type SendMessageMethodResponse struct {
+	MethodResponse
+	telegram.MessageConfig
+}
 
-	fmt.Println("Headers:")
-	for key, value := range request.Headers {
-		fmt.Printf("    %s: %s\n", key, value)
+func main() {
+	runtime.Start(HandleRequest)
+}
+
+func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+
+	var result *telegram.Update
+	err := json.Unmarshal([]byte(request.Body), result)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
 	}
 
-	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
+	response := SendMessageMethodResponse{
+		MethodResponse: MethodResponse{Method: "sendMessage"},
+		MessageConfig: telegram.MessageConfig{
+			BaseChat: telegram.BaseChat{
+				ChatID: result.Message.Chat.ID,
+			},
+			Text: "Hello World!",
+		},
+	}
+
+	body, err := json.Marshal(response)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 200}, nil
 }
