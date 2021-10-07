@@ -25,7 +25,7 @@ func main() {
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-	var result *telegram.Update
+	result := &telegram.Update{}
 	err := json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", err), StatusCode: 400}, nil
