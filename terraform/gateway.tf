@@ -39,7 +39,7 @@ resource "aws_apigatewayv2_integration" "blackabbot" {
 resource "aws_apigatewayv2_route" "blackabbot" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "GET /${var.telegram_bot_token}"
+  route_key = "POST /${var.telegram_bot_token}"
   target    = "integrations/${aws_apigatewayv2_integration.blackabbot.id}"
 }
 
