@@ -34,7 +34,6 @@ jobs:
 
       - name: Deploy lambda
         run: |
-          terraform force-unlock f3caf750-0460-f39c-639a-fa747f08948a
           make deploy
         env:
           TF_VAR_telegram_bot_token: ${{ secrets.BOT_API_KEY }}
