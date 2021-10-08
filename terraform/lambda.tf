@@ -3,7 +3,7 @@ resource "aws_iam_role" "lambda_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statment = [{
+    Statement = [{
       Action : ["sts:AssumeRole", "s3:*", "polly:*"],
       Effect : "Allow",
       Sid : ""
