@@ -120,6 +120,7 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: pollyT.OutputFormatOggVorbis,
 		Text:         &text,
+		Engine:       pollyT.EngineNeural,
 		VoiceId:      pollyT.VoiceIdKevin,
 	}
 
