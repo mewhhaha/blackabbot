@@ -82,5 +82,9 @@ func handleMessage(update *Update) (events.APIGatewayProxyResponse, error) {
 		return events.APIGatewayProxyResponse{StatusCode: 500}, nil
 	}
 
-	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{
+		Body:       string(body),
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		StatusCode: 200,
+	}, nil
 }
