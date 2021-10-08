@@ -121,9 +121,8 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: pollyT.OutputFormatOggVorbis,
 		Text:         &text,
-
-		Engine:  pollyT.EngineNeural,
-		VoiceId: pollyT.VoiceIdKevin,
+		Engine:       pollyT.EngineNeural,
+		VoiceId:      pollyT.VoiceIdKevin,
 	}
 
 	output, err := svc.SynthesizeSpeech(context.TODO(), input)
@@ -139,7 +138,7 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	svc := s3.NewFromConfig(cfg)
 	uploader := manager.NewUploader(svc)
 
-	filename := uuid.New().String()
+	filename := fmt.Sprintf("%s.ogg", uuid.New().String())
 
 	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
