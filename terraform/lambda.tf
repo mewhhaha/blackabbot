@@ -1,21 +1,18 @@
 resource "aws_iam_role" "lambda_role" {
   name = "blackabbot_lambda_role"
 
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statment = [{
+      Action : ["sts:AssumeRole", "s3:*", "polly:*"],
+      Effect : "Allow",
+      Sid : ""
+      Principal : {
+        Service : "lambda.amazonaws.com"
       },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
+      Resource = "*"
+    }]
+  })
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
@@ -34,6 +31,21 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   environment {
     variables = {
       TELEGRAM_BOT_TOKEN = var.telegram_bot_token
+      AUDIO_BUCKET       = aws_s3_bucket.audio_bucket.bucket
+    }
+  }
+}
+
+resource "aws_s3_bucket" "audio_bucket" {
+  bucket = "audio-bucket-01d19784-9eea-4632-9b70-c46c60acef3e"
+  acl    = "public-read"
+
+  lifecycle_rule {
+    id      = "all"
+    enabled = true
+
+    expiration {
+      days = 90
     }
   }
 }

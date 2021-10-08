@@ -3,14 +3,23 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"io"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	runtime "github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/polly"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/google/uuid"
 )
+
+var AudioBucket = os.Getenv("AUDIO_BUCKET")
 
 const (
 	MethodSendMessage = "sendMessage"
+	MethodSendVoice   = "sendVoice"
 )
 
 type MessageChat struct {
@@ -37,16 +46,10 @@ type Update struct {
 	Message  *Message `json:"message"`
 }
 
-type SendMessageMethodResponse struct {
-	Method                string       `json:"method"`
-	ChatId                int64        `json:"chat_id"`
-	ChannelUsername       *string      `json:"channel_username,omitempty"`
-	ReplyToMessageID      *int         `json:"reply_to_message_id,omitempty"`
-	ReplyMarkup           *interface{} `json:"reply_markup,omitempty"`
-	DisableNotification   *bool        `json:"disable_notification,omitempty"`
-	Text                  *string      `json:"text,omitempty"`
-	ParseMode             *string      `json:"parse_mode,omitempty"`
-	DisableWebPagePreview *bool        `json:"disable_web_page_preview,omitempty"`
+type SendVoiceMethodResponse struct {
+	Method string `json:"method"`
+	ChatId int64  `json:"chat_id"`
+	Voice  string `json:"voice"`
 }
 
 func main() {
@@ -58,28 +61,43 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	result := &Update{}
 	err := json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", err), StatusCode: 400}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+	}
+
+	sess, err := session.NewSession()
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
 	if result.Message != nil {
-		return handleMessage(result)
+		return handleMessage(sess, result)
 	}
 
 	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
 }
 
-func handleMessage(update *Update) (events.APIGatewayProxyResponse, error) {
+func handleMessage(sess *session.Session, update *Update) (events.APIGatewayProxyResponse, error) {
 	text := "Hello World!"
 
-	response := SendMessageMethodResponse{
-		Method: MethodSendMessage,
+	audio, err := textToSpeech(sess, text)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
+	}
+
+	uri, err := saveToStorage(sess, audio)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
+	}
+
+	response := SendVoiceMethodResponse{
+		Method: MethodSendVoice,
 		ChatId: update.Message.Chat.Id,
-		Text:   &text,
+		Voice:  *uri,
 	}
 
 	body, err := json.Marshal(response)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
 	return events.APIGatewayProxyResponse{
@@ -87,4 +105,43 @@ func handleMessage(update *Update) (events.APIGatewayProxyResponse, error) {
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		StatusCode: 200,
 	}, nil
+}
+
+func textToSpeech(sess *session.Session, text string) (io.ReadCloser, error) {
+	svc := polly.New(sess)
+
+	input := &polly.SynthesizeSpeechInput{
+		LanguageCode: aws.String("en"),
+		OutputFormat: aws.String("ogg"),
+		Text:         &text,
+		VoiceId:      aws.String("Kevin"),
+	}
+
+	output, err := svc.SynthesizeSpeech(input)
+	if err != nil {
+
+		return nil, err
+	}
+
+	return output.AudioStream, nil
+}
+
+func saveToStorage(sess *session.Session, audio io.ReadCloser) (*string, error) {
+	svc := s3manager.NewUploader(sess)
+
+	filename := uuid.New()
+
+	output, err := svc.Upload(&s3manager.UploadInput{
+		Bucket:      aws.String(AudioBucket),
+		Key:         aws.String(filename.String()),
+		Body:        audio,
+		ContentType: aws.String("audio/mpeg"),
+		ACL:         aws.String("public-read"),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &output.Location, nil
 }
