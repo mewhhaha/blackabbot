@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -118,7 +119,7 @@ func textToSpeech(sess *session.Session, text string) (io.ReadCloser, error) {
 	output, err := svc.SynthesizeSpeech(input)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("decompress %v: %w", "POLLY FAILED", err)
 	}
 
 	return output.AudioStream, nil
@@ -138,7 +139,7 @@ func saveToStorage(sess *session.Session, audio io.ReadCloser) (*string, error) 
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decompress %v: %w", "S3 FAILED", err)
 	}
 
 	return &output.Location, nil
