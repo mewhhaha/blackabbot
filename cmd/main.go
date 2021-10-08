@@ -18,8 +18,7 @@ import (
 var AudioBucket = os.Getenv("AUDIO_BUCKET")
 
 const (
-	MethodSendMessage = "sendMessage"
-	MethodSendVoice   = "sendVoice"
+	MethodSendVoice = "sendVoice"
 )
 
 type MessageChat struct {
@@ -111,8 +110,7 @@ func textToSpeech(sess *session.Session, text string) (io.ReadCloser, error) {
 	svc := polly.New(sess)
 
 	input := &polly.SynthesizeSpeechInput{
-		LanguageCode: aws.String("en"),
-		OutputFormat: aws.String("ogg"),
+		OutputFormat: aws.String("ogg_vorbis"),
 		Text:         &text,
 		VoiceId:      aws.String("Kevin"),
 	}
