@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	runtime "github.com/aws/aws-lambda-go/lambda"
@@ -88,7 +89,9 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyResponse, error) {
-	audio, err := textToSpeech(cfg, update.Message.Text)
+	text := strings.TrimPrefix(update.Message.Text, "/speak ")
+
+	audio, err := textToSpeech(cfg, text)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
@@ -103,7 +106,7 @@ func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyRespon
 		Method:    MethodSendAudio,
 		Performer: fullName,
 		Title:     fmt.Sprintf("%s said", fullName),
-		Caption:   update.Message.Text,
+		Caption:   text,
 		ChatId:    update.Message.Chat.Id,
 		Audio:     *uri,
 	}
