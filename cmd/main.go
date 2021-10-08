@@ -40,13 +40,13 @@ type Update struct {
 type SendMessageMethodResponse struct {
 	Method                string       `json:"method"`
 	ChatId                int64        `json:"chat_id"`
-	ChannelUsername       *string      `json:"channel_username"`
-	ReplyToMessageID      *int         `json:"reply_to_message_id"`
-	ReplyMarkup           *interface{} `json:"reply_markup"`
-	DisableNotification   *bool        `json:"disable_notification"`
-	Text                  *string      `json:"text"`
-	ParseMode             *string      `json:"parse_mode"`
-	DisableWebPagePreview *bool        `json:"disable_web_page_preview"`
+	ChannelUsername       *string      `json:"channel_username,omitempty"`
+	ReplyToMessageID      *int         `json:"reply_to_message_id,omitempty"`
+	ReplyMarkup           *interface{} `json:"reply_markup,omitempty"`
+	DisableNotification   *bool        `json:"disable_notification,omitempty"`
+	Text                  *string      `json:"text,omitempty"`
+	ParseMode             *string      `json:"parse_mode,omitempty"`
+	DisableWebPagePreview *bool        `json:"disable_web_page_preview,omitempty"`
 }
 
 func main() {
