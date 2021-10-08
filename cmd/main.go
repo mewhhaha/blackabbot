@@ -5,18 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	runtime "github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/polly"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/polly"
+	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
 )
 
-var AudioBucket = os.Getenv("AUDIO_BUCKET")
+var bucket = os.Getenv("AUDIO_BUCKET")
 
 const (
 	MethodSendVoice = "sendVoice"
@@ -64,27 +67,31 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
 
-	sess, err := session.NewSession()
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
 	if result.Message != nil {
-		return handleMessage(sess, result)
+		return handleMessage(cfg, result)
 	}
 
 	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
 }
 
-func handleMessage(sess *session.Session, update *Update) (events.APIGatewayProxyResponse, error) {
+func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyResponse, error) {
 	text := "Hello World!"
 
-	audio, err := textToSpeech(sess, text)
+	audio, err := textToSpeech(cfg, text)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
-	uri, err := saveToStorage(sess, audio)
+	uri, err := saveToStorage(cfg, audio)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
@@ -107,16 +114,16 @@ func handleMessage(sess *session.Session, update *Update) (events.APIGatewayProx
 	}, nil
 }
 
-func textToSpeech(sess *session.Session, text string) (io.ReadCloser, error) {
-	svc := polly.New(sess)
+func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
+	svc := polly.NewFromConfig(cfg)
 
 	input := &polly.SynthesizeSpeechInput{
-		OutputFormat: aws.String("ogg_vorbis"),
+		OutputFormat: pollyT.OutputFormatOggVorbis,
 		Text:         &text,
-		VoiceId:      aws.String("Kevin"),
+		VoiceId:      pollyT.VoiceIdKevin,
 	}
 
-	output, err := svc.SynthesizeSpeech(input)
+	output, err := svc.SynthesizeSpeech(context.TODO(), input)
 	if err != nil {
 
 		return nil, fmt.Errorf("decompress %v: %w", "POLLY FAILED", err)
@@ -125,22 +132,22 @@ func textToSpeech(sess *session.Session, text string) (io.ReadCloser, error) {
 	return output.AudioStream, nil
 }
 
-func saveToStorage(sess *session.Session, audio io.ReadCloser) (*string, error) {
-	svc := s3manager.NewUploader(sess)
+func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
+	svc := s3.NewFromConfig(cfg)
 
-	filename := uuid.New()
+	filename := uuid.New().String()
 
-	output, err := svc.Upload(&s3manager.UploadInput{
-		Bucket:      aws.String(AudioBucket),
-		Key:         aws.String(filename.String()),
+	_, err := svc.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(bucket),
+		Key:         aws.String(filename),
 		Body:        audio,
 		ContentType: aws.String("audio/mpeg"),
-		ACL:         aws.String("public-read"),
+		ACL:         s3T.ObjectCannedACLPublicRead,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("decompress %v: %w", "S3 FAILED", err)
 	}
 
-	return &output.Location, nil
+	uri := fmt.Sprintf("https://%s.s3-eu-west-1.amazonaws.com/%s", bucket, filename)
+	return &uri, nil
 }
