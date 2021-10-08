@@ -23,7 +23,7 @@ import (
 var bucket = os.Getenv("AUDIO_BUCKET")
 
 const (
-	MethodSendVoice = "sendVoice"
+	MethodSendAudio = "sendAudio"
 )
 
 type MessageChat struct {
@@ -98,7 +98,7 @@ func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyRespon
 	}
 
 	response := SendAudioMethodResponse{
-		Method: MethodSendVoice,
+		Method: MethodSendAudio,
 		ChatId: update.Message.Chat.Id,
 		Audio:  *uri,
 	}
