@@ -21,7 +21,7 @@ resource "aws_iam_policy" "lambda_policy" {
     Statement = [
       {
         Sid : "S3"
-        Action : "s3:*Object",
+        Action : "s3:*",
         Effect : "Allow",
         Resource : "arn:aws:s3:::${aws_s3_bucket.audio_bucket.bucket}"
         }, {
