@@ -138,13 +138,13 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	svc := s3.NewFromConfig(cfg)
 	uploader := manager.NewUploader(svc)
 
-	filename := fmt.Sprintf("%s.ogg", uuid.New().String())
+	filename := uuid.New().String()
 
 	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
 		Body:        audio,
-		ContentType: aws.String("audio/mpeg"),
+		ContentType: aws.String("audio/ogg"),
 		ACL:         s3T.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
