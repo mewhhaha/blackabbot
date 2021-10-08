@@ -50,10 +50,10 @@ type Update struct {
 	Message  *Message `json:"message"`
 }
 
-type SendVoiceMethodResponse struct {
+type SendAudioMethodResponse struct {
 	Method string `json:"method"`
 	ChatId int64  `json:"chat_id"`
-	Voice  string `json:"voice"`
+	Audio  string `json:"audio"`
 }
 
 func main() {
@@ -97,10 +97,10 @@ func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyRespon
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
-	response := SendVoiceMethodResponse{
+	response := SendAudioMethodResponse{
 		Method: MethodSendVoice,
 		ChatId: update.Message.Chat.Id,
-		Voice:  *uri,
+		Audio:  *uri,
 	}
 
 	body, err := json.Marshal(response)
@@ -119,7 +119,7 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	svc := polly.NewFromConfig(cfg)
 
 	input := &polly.SynthesizeSpeechInput{
-		OutputFormat: pollyT.OutputFormatOggVorbis,
+		OutputFormat: pollyT.OutputFormatMp3,
 		Text:         &text,
 		Engine:       pollyT.EngineNeural,
 		VoiceId:      pollyT.VoiceIdKevin,
@@ -144,7 +144,7 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
 		Body:        audio,
-		ContentType: aws.String("audio/ogg"),
+		ContentType: aws.String("audio/mpeg"),
 		ACL:         s3T.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
