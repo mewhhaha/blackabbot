@@ -1,5 +1,5 @@
 resource "aws_iam_role" "lambda_role" {
-  name = "blackabbot_lambda_role"
+  name = "blackabbot-lambda-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -14,7 +14,7 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 resource "aws_iam_policy" "lambda_policy" {
-  name = "lambda-policy"
+  name = "blackabbot-lambda-policy"
 
   policy = jsonencode({
     Version = "2012-10-17"
