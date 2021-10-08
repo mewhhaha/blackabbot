@@ -12,6 +12,7 @@ import (
 	runtime "github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/polly"
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -120,8 +121,9 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: pollyT.OutputFormatOggVorbis,
 		Text:         &text,
-		Engine:       pollyT.EngineNeural,
-		VoiceId:      pollyT.VoiceIdKevin,
+
+		Engine:  pollyT.EngineNeural,
+		VoiceId: pollyT.VoiceIdKevin,
 	}
 
 	output, err := svc.SynthesizeSpeech(context.TODO(), input)
@@ -135,10 +137,11 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 
 func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	svc := s3.NewFromConfig(cfg)
+	uploader := manager.NewUploader(svc)
 
 	filename := uuid.New().String()
 
-	_, err := svc.PutObject(context.TODO(), &s3.PutObjectInput{
+	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
 		Body:        audio,
@@ -149,6 +152,5 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 		return nil, fmt.Errorf("decompress %v: %w", "S3 FAILED", err)
 	}
 
-	uri := fmt.Sprintf("https://%s.s3-eu-west-1.amazonaws.com/%s", bucket, filename)
-	return &uri, nil
+	return &output.Location, nil
 }

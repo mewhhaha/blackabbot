@@ -25,7 +25,10 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.4.2 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.5.1 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.5.3
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.2.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.7.1 // indirect
 )
+
+require github.com/jmespath/go-jmespath v0.4.0 // indirect
