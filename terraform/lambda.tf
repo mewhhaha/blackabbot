@@ -4,23 +4,12 @@ resource "aws_iam_role" "lambda_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
+      Sid : "AssumeRole"
       Action : ["sts:AssumeRole"],
       Effect : "Allow",
-      Sid : "AssumeRole"
       Principal : {
         Service : "lambda.amazonaws.com"
-      },
-      }, {
-      Sid : "S3"
-      Action : ["s3:*"],
-      Effect : "Allow",
-      Resource : "arn:aws:s3:::${aws_s3_bucket.audio_bucket.bucket}"
-      }, {
-      Sid : "Polly",
-      Action : ["polly:*"],
-      Effect : "Allow",
-      Resource : "*"
-    }]
+    } }]
   })
 }
 
