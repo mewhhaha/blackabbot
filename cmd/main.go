@@ -51,9 +51,12 @@ type Update struct {
 }
 
 type SendAudioMethodResponse struct {
-	Method string `json:"method"`
-	ChatId int64  `json:"chat_id"`
-	Audio  string `json:"audio"`
+	Method    string `json:"method"`
+	ChatId    int64  `json:"chat_id"`
+	Audio     string `json:"audio"`
+	Performer string `json:"performer"`
+	Title     string `json:"title"`
+	Caption   string `json:"caption"`
 }
 
 func main() {
@@ -85,9 +88,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyResponse, error) {
-	text := "Hello World!"
-
-	audio, err := textToSpeech(cfg, text)
+	audio, err := textToSpeech(cfg, update.Message.Text)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
@@ -97,10 +98,14 @@ func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyRespon
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
+	fullName := fmt.Sprintf("%s %s", update.Message.From.FirstName, update.Message.From.LastName)
 	response := SendAudioMethodResponse{
-		Method: MethodSendAudio,
-		ChatId: update.Message.Chat.Id,
-		Audio:  *uri,
+		Method:    MethodSendAudio,
+		Performer: fullName,
+		Title:     fmt.Sprintf("%s said", fullName),
+		Caption:   update.Message.Text,
+		ChatId:    update.Message.Chat.Id,
+		Audio:     *uri,
 	}
 
 	body, err := json.Marshal(response)
