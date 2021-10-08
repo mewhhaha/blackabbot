@@ -4,13 +4,38 @@ resource "aws_iam_role" "lambda_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid : ""
-      Action : ["sts:AssumeRole"],
+      Sid : "AssumeRole"
+      Action : "sts:AssumeRole",
       Effect : "Allow",
       Principal : {
         Service : "lambda.amazonaws.com"
     } }]
   })
+}
+
+resource "aws_iam_policy" "lambda_policy" {
+  name = "lambda-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid : "S3"
+        Action : "s3:*Object",
+        Effect : "Allow",
+        Resource : "arn:aws:s3:::${aws_s3_bucket.audio_bucket.bucket}"
+        }, {
+        Sid : "Polly",
+        Action : ["polly:*"],
+        Effect : "Allow",
+        Resource : "*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
