@@ -89,8 +89,10 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyResponse, error) {
-	t0 := strings.TrimPrefix(update.Message.Text, "/speak ")
-	text := strings.TrimPrefix(t0, "/speak@BlackAbbot ")
+	t0 := strings.TrimPrefix(update.Message.Text, "/speak")
+	t1 := strings.TrimPrefix(t0, "/speak@BlackAbbot")
+	t2 := strings.TrimPrefix(t1, " ")
+	text := t2[0:140]
 
 	audio, err := textToSpeech(cfg, text)
 	if err != nil {
