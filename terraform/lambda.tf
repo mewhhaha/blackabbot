@@ -5,8 +5,9 @@ locals {
 data "aws_caller_identity" "current" {}
 
 locals {
-  prefix     = "git"
-  account_id = data.aws_caller_identity.current.account_id
+  prefix        = "git"
+  account_id    = data.aws_caller_identity.current.account_id
+  ecr_image_tag = "latest"
 }
 
 resource "aws_ecr_repository" "this" {
@@ -60,7 +61,7 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   package_type  = "Image"
   role          = aws_iam_role.lambda_role.arn
   timeout       = 15
-  image_uri     = "${aws_ecr_repository.this.repository_url}:latest"
+  image_uri     = "${aws_ecr_repository.this.repository_url}:${local.ecr_image_tag}"
 
   environment {
     variables = {
@@ -91,8 +92,10 @@ resource "null_resource" "initial_image" {
   provisioner "local-exec" {
     command     = <<EOF
                 aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin ${local.account_id}.dkr.ecr.eu-west-1.amazonaws.com
-                docker build . --tag ${aws_ecr_repository.this.repository_url}:latest --build-arg CMD_NAME=webhook -f ./deployments/Dockerfile
-                docker push --all-tags ${aws_ecr_repository.this.repository_url}
+                ECR_REPOSITORY=${aws_ecr_repository.this.repository_url}
+                ECR_TAG=${local.ecr_image_tag}
+                make build
+                make push
         EOF
     working_dir = "${path.module}/.."
   }
