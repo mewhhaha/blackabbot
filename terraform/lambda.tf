@@ -2,6 +2,13 @@ locals {
   function_name = "blackabbot-webhook"
 }
 
+data "aws_caller_identity" "current" {}
+
+locals {
+  prefix     = "git"
+  account_id = data.aws_caller_identity.current.account_id
+}
+
 resource "aws_ecr_repository" "this" {
   name = local.function_name
 }
@@ -82,12 +89,11 @@ resource "null_resource" "initial_image" {
   depends_on = [aws_ecr_repository.this]
 
   provisioner "local-exec" {
-    command     = "docker build . --tag ${aws_ecr_repository.this.repository_url}:latest --build-arg CMD_NAME=webhook -f ./deployments/Dockerfile"
-    working_dir = "${path.module}/.."
-  }
-
-  provisioner "local-exec" {
-    command     = "docker push --all-tags ${aws_ecr_repository.this.repository_url}"
+    command     = <<EOF
+                aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin ${local.account_id}.dkr.ecr.eu-west-1.amazonaws.com
+                docker build . --tag ${aws_ecr_repository.this.repository_url}:latest --build-arg CMD_NAME=webhook -f ./deployments/Dockerfile
+                docker push --all-tags ${aws_ecr_repository.this.repository_url}
+        EOF
     working_dir = "${path.module}/.."
   }
 }

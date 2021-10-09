@@ -7,4 +7,3 @@ variable "telegram_bot_name" {
   default = "@BlackAbbot"
 }
 
-
