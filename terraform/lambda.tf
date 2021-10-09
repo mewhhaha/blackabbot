@@ -55,6 +55,7 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   environment {
     variables = {
       TELEGRAM_BOT_TOKEN = var.telegram_bot_token
+      TELEGRAM_BOT_NAME  = var.telegram_bot_name
       AUDIO_BUCKET       = aws_s3_bucket.audio_bucket.bucket
     }
   }

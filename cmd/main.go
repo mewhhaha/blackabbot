@@ -22,9 +22,11 @@ import (
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
+var botName = os.Getenv("BOT_NAME")
 
 const (
-	MethodSendAudio = "sendAudio"
+	MethodSendAudio         = "sendAudio"
+	MethodAnswerInlineQuery = "answerInlineQuery"
 )
 
 type MessageChat struct {
@@ -46,9 +48,29 @@ type Message struct {
 	Text      string      `json:"text"`
 }
 
+type InlineQuery struct {
+	Id    string `json:"id"`
+	From  User   `json:"from"`
+	Query string `json:"query"`
+}
+
+type InlineQueryResult struct {
+}
+
+type AnswerInlineQuery struct {
+	InlineQueryId string              `json:"inline_query_id"`
+	Results       []InlineQueryResult `json:"results"`
+}
+
+type User struct {
+	Id        int32  `json:"id"`
+	FirstName string `json:"first_name"`
+}
+
 type Update struct {
-	UpdateId int64    `json:"update_id"`
-	Message  *Message `json:"message"`
+	UpdateId    int64        `json:"update_id"`
+	Message     *Message     `json:"message"`
+	InlineQuery *InlineQuery `json:"inline_query"`
 }
 
 type SendAudioMethodResponse struct {
@@ -81,55 +103,51 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
 	}
 
-	if result.Message != nil {
-		return handleMessage(cfg, result)
+	if result.InlineQuery != nil {
+		return handleInlineQuery(cfg, result), nil
+	}
+
+	if result.Message != nil && strings.HasPrefix(result.Message.Text, botName) {
+		return handleMessage(cfg, result), nil
 	}
 
 	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
+
 }
 
-func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyResponse, error) {
-	t0 := strings.TrimPrefix(update.Message.Text, "/speak")
-	t1 := strings.TrimPrefix(t0, "@BlackAbbot")
-	t2 := strings.TrimPrefix(t1, " ")
-
-	var text string
-	if len(t2) > 140 {
-		text = t2[0:140]
-	} else {
-		text = t2
+func handleInlineQuery(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
+	method := AnswerInlineQuery{
+		InlineQueryId: update.InlineQuery.Id,
+		Results:       []InlineQueryResult{},
 	}
+
+	return jsonResponse(method)
+}
+
+func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
+	text := trimText(update.Message.Text)
 
 	audio, err := textToSpeech(cfg, text)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
 	}
 
 	uri, err := saveToStorage(cfg, audio)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
 	}
 
-	fullName := fmt.Sprintf("%s %s", update.Message.From.FirstName, update.Message.From.LastName)
-	response := SendAudioMethodResponse{
+	name := update.Message.From.FirstName
+	method := SendAudioMethodResponse{
 		Method:    MethodSendAudio,
-		Performer: fullName,
-		Title:     fmt.Sprintf("%s said", fullName),
+		Performer: name,
+		Title:     fmt.Sprintf("%s said", name),
 		Caption:   text,
 		ChatId:    update.Message.Chat.Id,
 		Audio:     *uri,
 	}
 
-	body, err := json.Marshal(response)
-	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
-	}
-
-	return events.APIGatewayProxyResponse{
-		Body:       string(body),
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		StatusCode: 200,
-	}, nil
+	return jsonResponse(method)
 }
 
 func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
@@ -169,4 +187,31 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	}
 
 	return &output.Location, nil
+}
+
+func trimText(t string) string {
+	t0 := strings.TrimPrefix(t, "@BlackAbbot")
+	t1 := strings.TrimPrefix(t0, " ")
+
+	var text string
+	if len(t1) > 140 {
+		text = t1[0:140]
+	} else {
+		text = t1
+	}
+
+	return text
+}
+
+func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
+	body, err := json.Marshal(content)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
+	}
+
+	return events.APIGatewayProxyResponse{
+		Body:       string(body),
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		StatusCode: 200,
+	}
 }
