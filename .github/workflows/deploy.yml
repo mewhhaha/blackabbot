@@ -35,6 +35,7 @@ jobs:
 
       - name: Deploy lambda
         run: |
+          apt-get install pkg-config libopus-dev libopusfile-dev
           make deploy
         env:
           TF_VAR_telegram_bot_token: ${{ secrets.BOT_API_KEY }}
