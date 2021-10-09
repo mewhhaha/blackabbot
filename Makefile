@@ -4,11 +4,10 @@ dependencies:
 build: clean build/webhook
 
 build/%:
-	mkdir -p build
-	go build -o ./build/run ./cmd/$*/main.go 
-	cd build && \
-		zip $*.zip run
-	rm ./build/run
+	docker build . \
+		--tag blackabbot/$* \
+		--build-arg CMD_NAME=$* \
+		-f ./deployments/Dockerfile
 
 deploy:
 	set -e
