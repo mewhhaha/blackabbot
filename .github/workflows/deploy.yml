@@ -31,11 +31,11 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }} --profile ci
 
       - name: Build lambda
-        run: make build
-
-      - name: Deploy lambda
         run: |
           apt-get install pkg-config libopus-dev libopusfile-dev
-          make deploy
+          make build
+
+      - name: Deploy lambda
+        run: make deploy
         env:
           TF_VAR_telegram_bot_token: ${{ secrets.BOT_API_KEY }}
