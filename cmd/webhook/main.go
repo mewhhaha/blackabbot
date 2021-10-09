@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -155,11 +156,24 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	svc := polly.NewFromConfig(cfg)
 
+	voices := []pollyT.VoiceId{
+		pollyT.VoiceIdSalli,
+		pollyT.VoiceIdJoanna,
+		pollyT.VoiceIdIvy,
+		pollyT.VoiceIdKendra,
+		pollyT.VoiceIdKimberly,
+		pollyT.VoiceIdKevin,
+		pollyT.VoiceIdMatthew,
+		pollyT.VoiceIdJustin,
+		pollyT.VoiceIdJoey,
+	}
+	index := rand.Intn(len(voices))
+
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: pollyT.OutputFormatMp3,
 		Text:         &text,
 		Engine:       pollyT.EngineNeural,
-		VoiceId:      pollyT.VoiceIdKevin,
+		VoiceId:      voices[index],
 	}
 
 	output, err := svc.SynthesizeSpeech(context.TODO(), input)

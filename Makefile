@@ -1,11 +1,13 @@
 dependencies:
 	go mod download
 
-build: clean
+build: clean build/webhook
+
+build/%:
 	mkdir -p build
-	go build -o ./build/run ./cmd/main.go 
+	go build -o ./build/run ./cmd/$*/main.go 
 	cd build && \
-		zip function.zip run
+		zip $*.zip run
 	rm ./build/run
 
 deploy:
