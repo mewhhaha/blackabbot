@@ -22,7 +22,7 @@ import (
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
-var botName = os.Getenv("BOT_NAME")
+var botName = os.Getenv("TELEGRAM_BOT_NAME")
 
 const (
 	MethodSendAudio         = "sendAudio"
@@ -107,7 +107,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return handleInlineQuery(cfg, result), nil
 	}
 
-	if result.Message != nil && strings.HasPrefix(result.Message.Text, botName) {
+	if result.Message != nil && strings.HasPrefix(result.Message.Text, "@BlackAbbot") {
 		return handleMessage(cfg, result), nil
 	}
 
@@ -190,7 +190,7 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 }
 
 func trimText(t string) string {
-	t0 := strings.TrimPrefix(t, "@BlackAbbot")
+	t0 := strings.TrimPrefix(t, botName)
 	t1 := strings.TrimPrefix(t0, " ")
 
 	var text string
