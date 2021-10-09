@@ -1,17 +1,13 @@
 locals {
-  function_name = "blackabbot-webhook"
+  ecr_repository_name = "blackabbot-webhook"
+  prefix              = "git"
+  ecr_image_tag       = "latest"
 }
 
-data "aws_caller_identity" "current" {}
 
-locals {
-  prefix        = "git"
-  account_id    = data.aws_caller_identity.current.account_id
-  ecr_image_tag = "latest"
-}
 
 resource "aws_ecr_repository" "this" {
-  name = local.function_name
+  name = local.ecr_repository_name
 }
 
 
@@ -57,7 +53,7 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
-  function_name = local.function_name
+  function_name = local.ecr_repository_name
   package_type  = "Image"
   role          = aws_iam_role.lambda_role.arn
   timeout       = 15
@@ -91,7 +87,7 @@ resource "null_resource" "initial_image" {
 
   provisioner "local-exec" {
     command     = <<EOF
-                aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin ${local.account_id}.dkr.ecr.eu-west-1.amazonaws.com
+                aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.this.repository_url}
                 ECR_REPOSITORY=${aws_ecr_repository.this.repository_url}
                 ECR_TAG=${local.ecr_image_tag}
                 make build
