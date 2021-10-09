@@ -95,7 +95,7 @@ func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyRespon
 	t3 := strings.TrimPrefix(t2, "/speak@BlackAbbot")
 
 	var text string
-	if len(text) > 140 {
+	if len(t3) > 140 {
 		text = t3[0:140]
 	} else {
 		text = t3
