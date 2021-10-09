@@ -1,3 +1,13 @@
+locals {
+  function_name = "blackabbot/"
+}
+
+resource "aws_ecr_repository" "this" {
+  name = local.function_name
+}
+
+
+
 resource "aws_iam_role" "lambda_role" {
   name = "blackabbot-lambda-role"
 
@@ -39,10 +49,10 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
-  function_name = "blackab-telegram-bot"
+  function_name = local.function_name
   role          = aws_iam_role.lambda_role.arn
   timeout       = 15
-  image_uri     = "blackabbot/webhook"
+  image_uri     = "${aws_ecr_repository.this.repository_url}:latest"
 
   environment {
     variables = {
@@ -64,5 +74,19 @@ resource "aws_s3_bucket" "audio_bucket" {
     expiration {
       days = 90
     }
+  }
+}
+
+resource "null_resource" "initial_image" {
+  depends_on = [aws_ecr_repository.this]
+
+  provisioner "local-exec" {
+    command     = "docker build . --tag ${aws_ecr_repository.this.repository_url}:latest --build-arg CMD_NAME=webhook -f ./deployments/Dockerfile"
+    working_dir = "${path.module}/.."
+  }
+
+  provisioner "local-exec" {
+    command     = "docker push --all-tags ${aws_ecr_repository.this.repository_url}"
+    working_dir = "${path.module}/.."
   }
 }
