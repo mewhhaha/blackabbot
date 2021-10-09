@@ -190,13 +190,12 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 }
 
 func trimText(t string) string {
-	t0 := strings.TrimPrefix(t, botName)
-	t1 := strings.TrimPrefix(t0, " ")
+	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
 
-	if len(t1) > 140 {
-		return t1[0:140]
+	if len(trim) > 140 {
+		return trim[0:140]
 	} else {
-		return t1
+		return trim
 	}
 }
 
