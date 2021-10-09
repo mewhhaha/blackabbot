@@ -88,8 +88,8 @@ resource "null_resource" "initial_image" {
   provisioner "local-exec" {
     command     = <<EOF
                 aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.this.repository_url}
-                ECR_REPOSITORY=${aws_ecr_repository.this.repository_url}
-                ECR_TAG=${local.ecr_image_tag}
+                export ECR_REPOSITORY=${aws_ecr_repository.this.repository_url}
+                export ECR_TAG=${local.ecr_image_tag}
                 make build
                 make push
         EOF
