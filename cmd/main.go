@@ -58,6 +58,7 @@ type InlineQueryResult struct {
 }
 
 type AnswerInlineQuery struct {
+	Method        string
 	InlineQueryId string              `json:"inline_query_id"`
 	Results       []InlineQueryResult `json:"results"`
 }
@@ -117,6 +118,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 func handleInlineQuery(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
 	method := AnswerInlineQuery{
+		Method:        MethodAnswerInlineQuery,
 		InlineQueryId: update.InlineQuery.Id,
 		Results:       []InlineQueryResult{},
 	}
