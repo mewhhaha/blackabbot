@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -19,6 +21,7 @@ import (
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/digital-dream-labs/opus-go/opus"
 	"github.com/google/uuid"
 )
 
@@ -26,7 +29,7 @@ var bucket = os.Getenv("AUDIO_BUCKET")
 var botName = os.Getenv("TELEGRAM_BOT_NAME")
 
 const (
-	MethodSendAudio         = "sendAudio"
+	MethodSendVoice         = "sendVoice"
 	MethodAnswerInlineQuery = "answerInlineQuery"
 )
 
@@ -75,13 +78,10 @@ type Update struct {
 	InlineQuery *InlineQuery `json:"inline_query"`
 }
 
-type SendAudioMethodResponse struct {
-	Method    string `json:"method"`
-	ChatId    int64  `json:"chat_id"`
-	Audio     string `json:"audio"`
-	Performer string `json:"performer"`
-	Title     string `json:"title"`
-	Caption   string `json:"caption"`
+type SendVoiceMethodResponse struct {
+	Method string `json:"method"`
+	ChatId int64  `json:"chat_id"`
+	Voice  string `json:"voice"`
 }
 
 func main() {
@@ -130,7 +130,12 @@ func handleInlineQuery(cfg aws.Config, update *Update) events.APIGatewayProxyRes
 func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
 	text := trimText(update.Message.Text)
 
-	audio, err := textToSpeech(cfg, text)
+	pcm, err := textToSpeech(cfg, text)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
+	}
+
+	audio, err := convertToOpus(pcm)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
 	}
@@ -140,14 +145,10 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
 	}
 
-	name := update.Message.From.FirstName
-	method := SendAudioMethodResponse{
-		Method:    MethodSendAudio,
-		Performer: name,
-		Title:     fmt.Sprintf("%s said", name),
-		Caption:   text,
-		ChatId:    update.Message.Chat.Id,
-		Audio:     *uri,
+	method := SendVoiceMethodResponse{
+		Method: MethodSendVoice,
+		ChatId: update.Message.Chat.Id,
+		Voice:  *uri,
 	}
 
 	return jsonResponse(method)
@@ -170,7 +171,7 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	index := rand.Intn(len(voices))
 
 	input := &polly.SynthesizeSpeechInput{
-		OutputFormat: pollyT.OutputFormatMp3,
+		OutputFormat: pollyT.OutputFormatPcm,
 		Text:         &text,
 		Engine:       pollyT.EngineNeural,
 		VoiceId:      voices[index],
@@ -203,6 +204,29 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	}
 
 	return &output.Location, nil
+}
+
+func convertToOpus(pcm io.ReadCloser) (io.ReadCloser, error) {
+
+	audio, err := ioutil.ReadAll(pcm)
+	if err != nil {
+		return nil, err
+	}
+
+	stream := opus.OggStream{
+		SampleRate: 48000,
+		Channels:   1,
+		Bitrate:    24,
+		FrameSize:  20,
+		Complexity: 0,
+	}
+
+	data, err := stream.EncodeBytes(audio)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func trimText(t string) string {

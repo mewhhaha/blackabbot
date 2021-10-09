@@ -31,4 +31,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.7.1 // indirect
 )
 
-require github.com/jmespath/go-jmespath v0.4.0 // indirect
+require (
+	github.com/digital-dream-labs/opus-go v0.0.0-20201230195736-934a8a9e0a1e
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+)
+
+require (
+	github.com/grd/ogg v0.0.0-20130623210630-0dae53159b70 // indirect
+	gopkg.in/hraban/opus.v2 v2.0.0-20210415224706-ab1467d63813 // indirect
+)
