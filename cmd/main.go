@@ -193,14 +193,11 @@ func trimText(t string) string {
 	t0 := strings.TrimPrefix(t, botName)
 	t1 := strings.TrimPrefix(t0, " ")
 
-	var text string
 	if len(t1) > 140 {
-		text = t1[0:140]
+		return t1[0:140]
 	} else {
-		text = t1
+		return t1
 	}
-
-	return text
 }
 
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
