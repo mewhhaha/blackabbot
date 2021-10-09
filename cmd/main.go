@@ -92,7 +92,13 @@ func handleMessage(cfg aws.Config, update *Update) (events.APIGatewayProxyRespon
 	t0 := strings.TrimPrefix(update.Message.Text, "/speak")
 	t1 := strings.TrimPrefix(t0, "/speak@BlackAbbot")
 	t2 := strings.TrimPrefix(t1, " ")
-	text := t2[0:140]
+
+	var text string
+	if len(text) > 140 {
+		text = t2[0:140]
+	} else {
+		text = t2
+	}
 
 	audio, err := textToSpeech(cfg, text)
 	if err != nil {
