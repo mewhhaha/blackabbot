@@ -1,5 +1,5 @@
 locals {
-  function_name = "blackabbot/"
+  function_name = "blackabbot-webhook"
 }
 
 resource "aws_ecr_repository" "this" {
@@ -50,6 +50,7 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 
 resource "aws_lambda_function" "blackabbot_lambda" {
   function_name = local.function_name
+  package_type  = "Image"
   role          = aws_iam_role.lambda_role.arn
   timeout       = 15
   image_uri     = "${aws_ecr_repository.this.repository_url}:latest"
