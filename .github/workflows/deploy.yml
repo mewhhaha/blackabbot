@@ -32,7 +32,7 @@ jobs:
 
       - name: Build lambda
         run: |
-          apt-get install pkg-config libopus-dev libopusfile-dev
+          sudo apt-get install pkg-config libopus-dev libopusfile-dev
           make build
 
       - name: Deploy lambda
