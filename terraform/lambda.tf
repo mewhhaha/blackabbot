@@ -42,7 +42,7 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   function_name = "blackab-telegram-bot"
   filename      = "../build/webhook.zip"
   role          = aws_iam_role.lambda_role.arn
-  handler       = "./run"
+  handler       = "run"
   timeout       = 15
 
   # The filebase64sha256() function is available in Terraform 0.11.12 and later
