@@ -14,14 +14,11 @@ build: clean build/webhook
 
 build/%:
 	mkdir -p build
-	mkdir build/bin
-	mkdir build/lib
-	go build -tags nolibopusfile -ldflags="-s -w" -o ./build/run ./cmd/$*
-	cp /usr/bin/opusenc ./build/bin/
-	cp /usr/bin/opusdec ./build/bin/
-	cp /usr/bin/opusinfo ./build/bin/
-	cp /usr/lib/libopus.so.0 ./build/lib/
-	cp /usr/lib/libopusfile.so.0 ./build/lib/
+	mkdir -p build/bin
+	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
+	cp /usr/lib/libopus.so.0 ./build/
+	cp /usr/lib/libopusfile.so.0 ./build/
+	cd build && patchelf --set-origin '$ORIGIN' run
 	cd build && zip -r $*.zip ./*
 	rm ./build/run
 	rm -rf ./build/bin
