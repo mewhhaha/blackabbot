@@ -13,9 +13,9 @@ docker/build:
 build: clean build/webhook
 
 build/%:
-	mkdir -p build
+	mkdir -p build/$*
 	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
-	cd build && zip -r $*.zip ./*
+	cd build && zip -r $*/function.zip ./*
 	rm ./build/run
 	
 
