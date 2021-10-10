@@ -14,14 +14,9 @@ build: clean build/webhook
 
 build/%:
 	mkdir -p build
-	mkdir -p build/bin
-	go build -tags nolibopusfile -ldflags="-s -w" -o ./build/run ./cmd/$*
-	cp /usr/lib/libopus.so.0 ./build/
-	cp /usr/lib/libopusfile.so.0 ./build/
-	cd build && patchelf --set-rpath '$ORIGIN' ./run
+	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
 	cd build && zip -r $*.zip ./*
 	rm ./build/run
-	rm -rf ./build/bin
 	
 
 
