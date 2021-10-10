@@ -13,7 +13,9 @@ docker/build:
 build: clean build/webhook
 
 build/%:
-	mkdir -p build/bin
+	mkdir -p build
+	mkdir build/bin
+	mkdir build/lib
 	go build -tags nolibopusfile -ldflags="-s -w" -o ./build/run ./cmd/$*
 	cp /usr/bin/opusenc ./build/bin/
 	cp /usr/bin/opusdec ./build/bin/
