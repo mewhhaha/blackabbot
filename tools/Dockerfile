@@ -9,7 +9,7 @@ RUN go mod download
 FROM deps AS builder
 ARG CMD_NAME
 COPY . ./
-RUN go build -ldflags="-s -w" -o run ./cmd/$CMD_NAME
+RUN go build -ldflags="-w" -o run ./cmd/$CMD_NAME
 
 FROM alpine
 RUN apk --no-cache update
