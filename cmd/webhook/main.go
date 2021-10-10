@@ -91,7 +91,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	defer func() {
 		p := recover()
 		if p != nil {
-			resp = events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", p), StatusCode: 200}
+			resp = events.APIGatewayProxyResponse{Body: "error", StatusCode: 500}
 			err = nil
 		}
 	}()
