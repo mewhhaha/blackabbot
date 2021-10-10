@@ -21,8 +21,8 @@ import (
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/digital-dream-labs/opus-go/opus"
 	"github.com/google/uuid"
+	"gopkg.in/hraban/opus.v2"
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
@@ -130,7 +130,7 @@ func handleInlineQuery(cfg aws.Config, update *Update) events.APIGatewayProxyRes
 func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
 	text := trimText(update.Message.Text)
 
-	pcm, err := textToSpeech(cfg, text)
+	pcm, err := textToSpeech(cfg, text, pollyT.OutputFormatPcm)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
 	}
@@ -154,7 +154,7 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 	return jsonResponse(method)
 }
 
-func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
+func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.ReadCloser, error) {
 	svc := polly.NewFromConfig(cfg)
 
 	voices := []pollyT.VoiceId{
@@ -171,7 +171,7 @@ func textToSpeech(cfg aws.Config, text string) (io.ReadCloser, error) {
 	index := rand.Intn(len(voices))
 
 	input := &polly.SynthesizeSpeechInput{
-		OutputFormat: pollyT.OutputFormatPcm,
+		OutputFormat: format,
 		Text:         &text,
 		Engine:       pollyT.EngineNeural,
 		VoiceId:      voices[index],
@@ -206,25 +206,36 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	return &output.Location, nil
 }
 
-func convertToOpus(pcm io.ReadCloser) (io.ReadCloser, error) {
+func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 
-	audio, err := ioutil.ReadAll(pcm)
+	bs, err := ioutil.ReadAll(audio)
 	if err != nil {
 		return nil, err
 	}
 
-	stream := opus.OggStream{
-		SampleRate: 48000,
-		Channels:   1,
-		Bitrate:    24,
-		FrameSize:  20,
-		Complexity: 0,
+	var pcm []int16
+	for i := 0; i < len(bs); i = i + 2 {
+		// https://stackoverflow.com/questions/38675266/go-convert-2-byte-array-into-a-uint16-value
+		i16 := int16(bs[i])<<8 + int16(bs[i+1])
+		pcm = append(pcm, i16)
 	}
 
-	data, err := stream.EncodeBytes(audio)
+	const sampleRate = 48000
+	const channels = 1
+	const bufferSize = 1000
+
+	enc, err := opus.NewEncoder(sampleRate, channels, opus.AppVoIP)
 	if err != nil {
 		return nil, err
 	}
+
+	data := make([]byte, bufferSize)
+	n, err := enc.Encode(pcm, data)
+	if err != nil {
+		return nil, err
+	}
+
+	data = data[:n]
 
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
