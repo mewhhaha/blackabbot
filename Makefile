@@ -18,6 +18,8 @@ build/%:
 	cp /usr/bin/opusenc ./build/bin/
 	cp /usr/bin/opusdec ./build/bin/
 	cp /usr/bin/opusinfo ./build/bin/
+	cp /usr/lib/libopus.so.0 ./build
+	cp /usr/lib/libopusfile.so.0 ./build
 	cd build && zip -r $*.zip ./*
 	rm ./build/run
 	rm -rf ./build/bin
