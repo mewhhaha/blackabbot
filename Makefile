@@ -15,8 +15,9 @@ build: clean build/webhook
 build/%:
 	mkdir -p build/$*/bin
 	go build -ldflags="-s -w" -o ./build/$*/run ./cmd/$*
-	# cd build/$* && zip -r function.zip ./*
-	# rm ./build/$*/run
+	cd build/$* && zip -r function.zip ./*
+	rm ./build/$*/run
+	
 
 deploy:
 	set -e
