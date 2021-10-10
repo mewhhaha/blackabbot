@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"strings"
@@ -20,7 +18,6 @@ import (
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/digital-dream-labs/opus-go/opus"
 	"github.com/google/uuid"
 )
 
@@ -140,12 +137,12 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 		return errorResponse(err, 500)
 	}
 
-	audio, err := convertToOpus(pcm)
-	if err != nil {
-		return errorResponse(err, 500)
-	}
+	// audio, err := convertToOpus(pcm)
+	// if err != nil {
+	// 	return errorResponse(err, 500)
+	// }
 
-	uri, err := saveToStorage(cfg, audio)
+	uri, err := saveToStorage(cfg, pcm)
 	if err != nil {
 		return errorResponse(err, 500)
 	}
@@ -211,27 +208,27 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	return &output.Location, nil
 }
 
-func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
-	pcm, err := ioutil.ReadAll(audio)
-	if err != nil {
-		return nil, err
-	}
+// func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
+// 	pcm, err := ioutil.ReadAll(audio)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	stream := opus.OggStream{
-		SampleRate: 48000,
-		Channels:   1,
-		Bitrate:    24,
-		FrameSize:  20,
-		Complexity: 0,
-	}
+// 	stream := opus.OggStream{
+// 		SampleRate: 48000,
+// 		Channels:   1,
+// 		Bitrate:    24,
+// 		FrameSize:  20,
+// 		Complexity: 0,
+// 	}
 
-	data, err := stream.EncodeBytes(pcm)
-	if err != nil {
-		return nil, err
-	}
+// 	data, err := stream.EncodeBytes(pcm)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return io.NopCloser(bytes.NewReader(data)), nil
-}
+// 	return io.NopCloser(bytes.NewReader(data)), nil
+// }
 
 func trimText(t string) string {
 	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
