@@ -88,6 +88,13 @@ func main() {
 }
 
 func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (resp events.APIGatewayProxyResponse, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			resp = events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v+", p), StatusCode: 200}
+			err = nil
+		}
+	}()
+
 	result := &Update{}
 	err = json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
