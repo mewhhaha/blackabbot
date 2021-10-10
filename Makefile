@@ -7,9 +7,8 @@ dependencies:
 	go mod download
 
 docker/build: 
-	set -e
 	docker build . -t blackabbot/builder -f ./tools/Dockerfile
-	docker run --rm -it -v ${CURRENT_DIR}:/project blackabbot/builder 
+	docker run --rm -v ${CURRENT_DIR}:/project blackabbot/builder 
 
 build: clean build/webhook
 
@@ -17,9 +16,10 @@ build/%:
 	mkdir -p build/bin
 	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
 	cp /usr/bin/opusenc ./build/bin/
-	cd build && zip $*.zip ./*
+	cd build && zip -r $*.zip ./*
 	rm ./build/run
 	rm -rf ./build/bin
+	
 
 
 deploy:
