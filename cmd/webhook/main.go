@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -91,8 +90,7 @@ func main() {
 
 func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (resp events.APIGatewayProxyResponse, err error) {
 	defer func() {
-		p := recover()
-		if p != nil {
+		if p := recover(); p != nil {
 			resp = events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", p), StatusCode: 200}
 			err = nil
 		}
@@ -106,7 +104,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-1"))
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		return errorResponse(err, 500), nil
 	}
 
 	if err != nil {
