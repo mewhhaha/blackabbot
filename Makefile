@@ -20,6 +20,8 @@ build/%:
 	cd build/$* && patchelf --set-rpath "$$ORIGIN" run
 	cd build/$* && zip -r function.zip ./*
 	rm ./build/$*/run
+	rm ./build/$*/libopusfile.so.0
+	rm ./build/$*/libopus.so.0
 	
 
 deploy:

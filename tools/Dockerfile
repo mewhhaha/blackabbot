@@ -9,5 +9,5 @@ RUN go mod download
 FROM deps AS builder
 ENV GOOS linux
 ENV GOARCH amd64
-CMD ["make", "build"]
+ENTRYPOINT ["make", "build"]
 
