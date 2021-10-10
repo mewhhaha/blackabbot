@@ -39,17 +39,14 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
-  function_name = "blackab-telegram-bot"
-  filename      = "../build/webhook/function.zip"
-  role          = aws_iam_role.lambda_role.arn
-  handler       = "run"
-  timeout       = 15
-
-  # The filebase64sha256() function is available in Terraform 0.11.12 and later
-  # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
-  # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
+  function_name    = "blackab-telegram-bot"
+  role             = aws_iam_role.lambda_role.arn
+  filename         = "../build/webhook/function.zip"
   source_code_hash = filebase64sha256("../build/webhook/function.zip")
+  handler          = "./run"
   runtime          = "go1.x"
+  timeout          = 15
+
 
   environment {
     variables = {
