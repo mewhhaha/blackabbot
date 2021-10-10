@@ -89,10 +89,17 @@ func main() {
 	runtime.Start(handleRequest)
 }
 
-func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (resp events.APIGatewayProxyResponse, err error) {
+	defer func() {
+		p := recover()
+		if p != nil {
+			resp = events.APIGatewayProxyResponse{Body: fmt.Sprintf("%v", p), StatusCode: 200}
+			err = nil
+		}
+	}()
 
 	result := &Update{}
-	err := json.Unmarshal([]byte(request.Body), result)
+	err = json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
 		return errorResponse(err, 400), nil
 	}
