@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,8 +20,8 @@ import (
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/digital-dream-labs/opus-go/opus"
 	"github.com/google/uuid"
-	"gopkg.in/hraban/opus.v2"
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
@@ -213,33 +212,23 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 }
 
 func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
-
-	bs, err := ioutil.ReadAll(audio)
+	pcm, err := ioutil.ReadAll(audio)
 	if err != nil {
 		return nil, err
 	}
 
-	pcm := make([]int16, len(bs)/2)
-	for i := 0; i < len(bs)/2; i++ {
-		pcm[i] = int16(binary.LittleEndian.Uint16(bs[i*2:]))
+	stream := opus.OggStream{
+		SampleRate: 48000,
+		Channels:   1,
+		Bitrate:    24,
+		FrameSize:  20,
+		Complexity: 0,
 	}
 
-	const sampleRate = 48000
-	const channels = 1
-	const bufferSize = 1000
-
-	enc, err := opus.NewEncoder(sampleRate, channels, opus.AppVoIP)
+	data, err := stream.EncodeBytes(pcm)
 	if err != nil {
 		return nil, err
 	}
-
-	data := make([]byte, bufferSize)
-	n, err := enc.Encode(pcm, data)
-	if err != nil {
-		return nil, err
-	}
-
-	data = data[:n]
 
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
