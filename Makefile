@@ -14,9 +14,10 @@ build: clean build/webhook
 
 build/%:
 	mkdir -p build/$*
-	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
-	cd build && zip -r $*/function.zip ./*
-	rm ./build/run
+	go build -ldflags="-s -w" -o ./build/$*/run ./cmd/$*
+	chmod 777 ./build/$*/run
+	cd build/$* && zip -r function.zip ./*
+	rm ./build/$*/run
 	
 
 
