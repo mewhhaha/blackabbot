@@ -1,3 +1,16 @@
+resource "aws_ecr_repository" "blackabbot" {
+  name = "blackabbot"
+
+  provisioner "local-exec" {
+    command = <<EOF
+          docker tag ${var.webhook_image_id} ${self.repository_url}:latest
+          docker push ${self.repository_url}:latest
+    EOF
+  }
+}
+
+
+
 resource "aws_iam_role" "lambda_role" {
   name = "blackabbot-lambda-role"
 
@@ -39,13 +52,15 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
-  function_name    = "blackab-telegram-bot"
-  role             = aws_iam_role.lambda_role.arn
-  filename         = "../build/webhook/function.zip"
-  source_code_hash = filebase64sha256("../build/webhook/function.zip")
-  handler          = "./run"
-  runtime          = "go1.x"
-  timeout          = 15
+  function_name = "blackab-telegram-bot"
+  role          = aws_iam_role.lambda_role.arn
+  type          = "Image"
+  # filename         = "../build/webhook/function.zip"
+  # source_code_hash = filebase64sha256("../build/webhook/function.zip")
+  # handler          = "./run"
+  # runtime          = "go1.x"
+  image_uri = aws_ecr_repository.blackabbot.repository_url
+  timeout   = 15
 
 
   environment {

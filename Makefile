@@ -6,27 +6,14 @@ CURRENT_DIR := $(dir $(CURRENT_PATH))
 dependencies:
 	go mod download
 
-docker/build: 
-	docker build . -t blackabbot/builder -f ./tools/Dockerfile
-	docker run --rm -v ${CURRENT_DIR}:/project blackabbot/builder 
-
 build: clean build/webhook
 
 build/%:
-	mkdir -p build/$*
-	go build -tags nolibopusfile -o ./build/$*/run ./cmd/$*
+	docker build . \
+		--tag blackabbot/$* \
+		--build-arg CMD_NAME=$* \
+		-f  ./tools/Dockerfile
 
-	cp /usr/lib/x86_64-linux-gnu/libopus.so.0 ./build/$*/
-	cp /usr/lib/x86_64-linux-gnu/libogg.so.0 ./build/$*/
-	cp /usr/lib/libopusfile.so.0 ./build/$*/
-
-	cd build/$* && patchelf --set-rpath "$$ORIGIN" run
-	cd build/$* && zip -r function.zip ./*
-
-	rm ./build/$*/run
-	rm ./build/$*/libopusfile.so.0
-	rm ./build/$*/libopus.so.0
-	rm ./build/$*/libogg.so.0
 	
 
 deploy:

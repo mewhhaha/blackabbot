@@ -36,9 +36,10 @@ jobs:
 
       - name: Build lambda
         run: |
-          make docker/build
+          make build
 
       - name: Deploy lambda
         run: make deploy
         env:
           TF_VAR_telegram_bot_token: ${{ secrets.BOT_API_KEY }}
+          TF_VAR_webhook_image_id: blackabbot/webhook
