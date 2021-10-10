@@ -10,7 +10,7 @@ build: clean build/webhook
 
 build/%:
 	docker build . \
-		--tag blackabbot/$* \
+		--tag blackabbot-$* \
 		--build-arg CMD_NAME=$* \
 		-f  ./tools/Dockerfile
 
