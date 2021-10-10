@@ -16,6 +16,8 @@ build/%:
 	mkdir -p build/bin
 	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
 	cp /usr/bin/opusenc ./build/bin/
+	cp /usr/bin/opusdec ./build/bin/
+	cp /usr/bin/opusinfo ./build/bin/
 	cd build && zip -r $*.zip ./*
 	rm ./build/run
 	rm -rf ./build/bin
