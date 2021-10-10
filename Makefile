@@ -18,7 +18,7 @@ build/%:
 	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
 	cp /usr/lib/libopus.so.0 ./build/
 	cp /usr/lib/libopusfile.so.0 ./build/
-	cd build && patchelf --set-origin '$ORIGIN' run
+	cd build && patchelf --set-rpath '$ORIGIN' ./run
 	cd build && zip -r $*.zip ./*
 	rm ./build/run
 	rm -rf ./build/bin
