@@ -1,17 +1,3 @@
-locals {
-  ecr_repository_name = "blackabbot-webhook"
-  prefix              = "git"
-  ecr_image_tag       = "latest"
-}
-
-
-
-resource "aws_ecr_repository" "this" {
-  name = local.ecr_repository_name
-}
-
-
-
 resource "aws_iam_role" "lambda_role" {
   name = "blackabbot-lambda-role"
 
@@ -53,11 +39,17 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
-  function_name = local.ecr_repository_name
-  package_type  = "Image"
+  function_name = "blackab-telegram-bot"
+  filename      = "../build/webhook.zip"
   role          = aws_iam_role.lambda_role.arn
+  handler       = "./run"
   timeout       = 15
-  image_uri     = "${aws_ecr_repository.this.repository_url}:${local.ecr_image_tag}"
+
+  # The filebase64sha256() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
+  # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
+  source_code_hash = filebase64sha256("../build/webhook.zip")
+  runtime          = "go1.x"
 
   environment {
     variables = {
@@ -79,20 +71,5 @@ resource "aws_s3_bucket" "audio_bucket" {
     expiration {
       days = 90
     }
-  }
-}
-
-resource "null_resource" "initial_image" {
-  depends_on = [aws_ecr_repository.this]
-
-  provisioner "local-exec" {
-    command     = <<EOF
-                aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.this.repository_url}
-                export ECR_REPOSITORY=${aws_ecr_repository.this.repository_url}
-                export ECR_TAG=${local.ecr_image_tag}
-                make build
-                make push
-        EOF
-    working_dir = "${path.module}/.."
   }
 }
