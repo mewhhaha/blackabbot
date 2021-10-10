@@ -54,12 +54,12 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 resource "aws_lambda_function" "blackabbot_lambda" {
   function_name = "blackab-telegram-bot"
   role          = aws_iam_role.lambda_role.arn
-  type          = "Image"
+  package_type  = "Image"
   # filename         = "../build/webhook/function.zip"
   # source_code_hash = filebase64sha256("../build/webhook/function.zip")
   # handler          = "./run"
   # runtime          = "go1.x"
-  image_uri = aws_ecr_repository.blackabbot.repository_url
+  image_uri = "${aws_ecr_repository.blackabbot.repository_url}:latest"
   timeout   = 15
 
 
