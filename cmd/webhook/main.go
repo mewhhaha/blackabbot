@@ -93,7 +93,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	result := &Update{}
 	err := json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
+		return errorResponse(err, 400), nil
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-1"))
@@ -102,7 +102,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}, nil
+		return errorResponse(err, 500), nil
 	}
 
 	if result.InlineQuery != nil {
@@ -113,7 +113,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return handleMessage(cfg, result), nil
 	}
 
-	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
+	return nopResponse(), nil
 
 }
 
@@ -132,17 +132,17 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 
 	pcm, err := textToSpeech(cfg, text, pollyT.OutputFormatPcm)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
+		return errorResponse(err, 500)
 	}
 
 	audio, err := convertToOpus(pcm)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
+		return errorResponse(err, 500)
 	}
 
 	uri, err := saveToStorage(cfg, audio)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
+		return errorResponse(err, 500)
 	}
 
 	method := SendVoiceMethodResponse{
@@ -253,7 +253,7 @@ func trimText(t string) string {
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 	body, err := json.Marshal(content)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 500}
+		return errorResponse(err, 500)
 	}
 
 	return events.APIGatewayProxyResponse{
@@ -261,4 +261,12 @@ func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		StatusCode: 200,
 	}
+}
+
+func errorResponse(err error, statusCode int) events.APIGatewayProxyResponse {
+	return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: statusCode}
+}
+
+func nopResponse() events.APIGatewayProxyResponse {
+	return events.APIGatewayProxyResponse{StatusCode: 200}
 }
