@@ -1,8 +1,15 @@
 resource "aws_ecr_repository" "blackabbot" {
   name = "blackabbot"
+}
 
+resource "null_resource" "image" {
   provisioner "local-exec" {
     command = <<EOF
+          aws ecr get-login-password \
+            --region eu-west-1 \
+            | docker login \
+            --username AWS \
+            --password-stdin ${self.repository_url}
           docker tag ${var.webhook_image_id} ${self.repository_url}:latest
           docker push ${self.repository_url}:latest
     EOF
