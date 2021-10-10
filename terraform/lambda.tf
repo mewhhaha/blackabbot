@@ -6,7 +6,7 @@ data "aws_ecr_authorization_token" "blackabbot" {
   registry_id = aws_ecr_repository.blackabbot.registry_id
 }
 
-resource "null_resource" "image" {
+resource "null_resource" "webhook_image" {
   depends_on = [
     aws_ecr_repository.blackabbot
   ]
@@ -41,6 +41,9 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 resource "aws_iam_policy" "lambda_policy" {
+  depends_on = [
+    null_resource.webhook_image
+  ]
   name = "blackabbot-lambda-policy"
 
   policy = jsonencode({
