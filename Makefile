@@ -14,7 +14,7 @@ build: clean build/webhook
 
 build/%:
 	mkdir -p build/bin
-	go build -ldflags="-s -w" -o ./build/run ./cmd/$*
+	go build -tags nolibopusfile -ldflags="-s -w" -o ./build/run ./cmd/$*
 	cp /usr/bin/opusenc ./build/bin/
 	cp /usr/bin/opusdec ./build/bin/
 	cp /usr/bin/opusinfo ./build/bin/
