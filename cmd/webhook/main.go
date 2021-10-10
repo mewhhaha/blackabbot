@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -213,11 +214,9 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	var pcm []int16
-	for i := 0; i < len(bs); i = i + 2 {
-		// https://stackoverflow.com/questions/38675266/go-convert-2-byte-array-into-a-uint16-value
-		i16 := int16(bs[i])<<8 + int16(bs[i+1])
-		pcm = append(pcm, i16)
+	pcm := make([]int16, len(bs)/2)
+	for i := 0; i < len(bs)/2; i++ {
+		pcm[i] = int16(binary.LittleEndian.Uint16(bs[i*2:]))
 	}
 
 	const sampleRate = 48000
