@@ -210,7 +210,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	stream := opus.OggStream{
+	stream := &opus.OggStream{
 		SampleRate: 48000,
 		Channels:   1,
 		Bitrate:    40000,
