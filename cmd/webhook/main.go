@@ -213,9 +213,6 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 	stream := opus.OggStream{
 		SampleRate: 48000,
 		Channels:   1,
-		Bitrate:    240000,
-		FrameSize:  20,
-		Complexity: 0,
 	}
 
 	data, err := stream.EncodeBytes(pcm)
