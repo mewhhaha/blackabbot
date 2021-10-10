@@ -17,6 +17,7 @@ build/%:
 	go build -o ./build/$*/run ./cmd/$*
 	cp /usr/lib/x86_64-linux-gnu/libopus.so.0 ./build/$*/
 	cp /usr/lib/libopusfile.so.0 ./build/$*/
+	cd build/$* && patchelf --set-rpath "$$ORIGIN" run
 	cd build/$* && zip -r function.zip ./*
 	rm ./build/$*/run
 	

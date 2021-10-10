@@ -1,6 +1,6 @@
 FROM golang:1.17.1 AS deps
 RUN apt-get update
-RUN apt-get install -y pkg-config libopus-dev libopusfile-dev zip
+RUN apt-get install -y pkg-config libopus-dev libopusfile-dev zip patchelf
 WORKDIR /project
 COPY go.mod ./
 COPY go.sum ./
