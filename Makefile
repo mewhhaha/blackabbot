@@ -14,7 +14,7 @@ build: clean build/webhook
 
 build/%:
 	mkdir -p build/$*
-	go build -o ./build/$*/run ./cmd/$*
+	go build -tags nolibopusfile -o ./build/$*/run ./cmd/$*
 
 	cp /usr/lib/x86_64-linux-gnu/libopus.so.0 ./build/$*/
 	cp /usr/lib/x86_64-linux-gnu/libogg.so.0 ./build/$*/
