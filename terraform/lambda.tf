@@ -9,9 +9,9 @@ resource "null_resource" "image" {
             --region eu-west-1 \
             | docker login \
             --username AWS \
-            --password-stdin ${self.repository_url}
-          docker tag ${var.webhook_image_id} ${self.repository_url}:latest
-          docker push ${self.repository_url}:latest
+            --password-stdin ${aws_ecr_repository.blackabbot.repository_url}
+          docker tag ${var.webhook_image_id} ${aws_ecr_repository.blackabbot.repository_url}:latest
+          docker push ${aws_ecr_repository.blackabbot.repository_url}:latest
     EOF
   }
 }
