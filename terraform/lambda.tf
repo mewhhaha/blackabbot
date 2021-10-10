@@ -2,6 +2,9 @@ resource "aws_ecr_repository" "blackabbot" {
   name = "blackabbot"
 }
 
+data "aws_ecr_authorization_token" "token" {
+}
+
 resource "null_resource" "image" {
   depends_on = [
     aws_ecr_repository.blackabbot
@@ -9,7 +12,7 @@ resource "null_resource" "image" {
 
   provisioner "local-exec" {
     command = <<EOF
-          docker login -u AWS -p $(aws ecr get-login-password --region eu-west-1) ${aws_ecr_repository.blackabbot.repository_url}
+          docker login --username AWS -p ${aws_ecr_authorization_token.token.password} ${aws_ecr_repository.blackabbot.repository_url}
           docker tag ${var.webhook_image_id} ${aws_ecr_repository.blackabbot.repository_url}:latest
           docker push ${aws_ecr_repository.blackabbot.repository_url}:latest
     EOF
