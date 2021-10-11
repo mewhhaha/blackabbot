@@ -11,6 +11,10 @@ resource "null_resource" "webhook_image" {
     aws_ecr_repository.blackabbot
   ]
 
+  triggers = {
+    always_run = "${filebase64sha256("../cmd/webhook/main.go")}"
+  }
+
   provisioner "local-exec" {
     command = <<EOF
           docker login \
@@ -72,12 +76,8 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   function_name = "blackab-telegram-bot"
   role          = aws_iam_role.lambda_role.arn
   package_type  = "Image"
-  # filename         = "../build/webhook/function.zip"
-  # source_code_hash = filebase64sha256("../build/webhook/function.zip")
-  # handler          = "./run"
-  # runtime          = "go1.x"
-  image_uri = "${aws_ecr_repository.blackabbot.repository_url}:latest"
-  timeout   = 15
+  image_uri     = "${aws_ecr_repository.blackabbot.repository_url}:latest"
+  timeout       = 15
 
 
   environment {
