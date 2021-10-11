@@ -21,8 +21,8 @@ import (
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/digital-dream-labs/opus-go/opus"
 	"github.com/google/uuid"
+	"gopkg.in/hraban/opus.v2"
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
@@ -212,25 +212,31 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	stream := &opus.OggStream{
-		SampleRate: 16000,
-		Channels:   1,
-		Bitrate:    24000,
-		FrameSize:  20,
-		Complexity: 1,
+	enc, err := opus.NewEncoder(16000, 1, opus.AppVoIP)
+	if err != nil {
+		return nil, err
 	}
+	// stream := &opus.OggStream{
+	// 	SampleRate: 16000,
+	// 	Channels:   1,
+	// 	Bitrate:    24000,
+	// 	FrameSize:  20,
+	// 	Complexity: 1,
+	// }
 
 	i16 := make([]int16, len(pcm)/2)
 	for i := 0; i < len(pcm); i = i + 2 {
 		i16 = append(i16, int16(binary.LittleEndian.Uint16(pcm[i:i+1])))
 	}
 
-	panic(i16)
+	data := make([]byte, 10000)
 
-	data, err := stream.Encode(i16)
+	n, err := enc.Encode(i16, data)
 	if err != nil {
 		return nil, err
 	}
+
+	data = data[:n]
 
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
