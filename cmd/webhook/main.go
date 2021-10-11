@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,8 +20,8 @@ import (
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/digital-dream-labs/opus-go/opus"
 	"github.com/google/uuid"
-	"gopkg.in/hraban/opus.v2"
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
@@ -172,7 +171,7 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.R
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: format,
 		Text:         &text,
-		SampleRate:   aws.String("8000"),
+		SampleRate:   aws.String("24000"),
 		Engine:       pollyT.EngineNeural,
 		VoiceId:      voices[index],
 	}
@@ -207,54 +206,23 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 }
 
 func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
-	bs, err := ioutil.ReadAll(audio)
+	pcm, err := ioutil.ReadAll(audio)
 	if err != nil {
 		return nil, err
 	}
 
-	const sampleRate = 8000
-	const channels = 1
+	stream := &opus.OggStream{
+		SampleRate: 24000,
+		Channels:   1,
+		Bitrate:    40000,
+		FrameSize:  20,
+		Complexity: 12000,
+	}
 
-	enc, err := opus.NewEncoder(sampleRate, channels, opus.AppVoIP)
+	data, err := stream.EncodeBytes(pcm)
 	if err != nil {
 		return nil, err
 	}
-	// stream := &opus.OggStream{
-	// 	SampleRate: 16000,
-	// 	Channels:   1,
-	// 	Bitrate:    24000,
-	// 	FrameSize:  20,
-	// 	Complexity: 1,
-	// }
-
-	err = enc.SetBitrate(24000)
-	if err != nil {
-		return nil, err
-	}
-
-	pcm := make([]int16, len(bs)/2)
-	for i := 0; i < len(bs)/2; i++ {
-		pcm = append(pcm, int16(binary.LittleEndian.Uint16(bs[i*2:i*2+2])))
-	}
-
-	frameSize := len(pcm) // must be interleaved if stereo
-	frameSizeMs := float32(frameSize) / channels * 1000 / sampleRate
-	switch frameSizeMs {
-	case 2.5, 5, 10, 20, 40, 60:
-		return nil, fmt.Errorf("Legal frame size: %d bytes (%f ms)", frameSize, frameSizeMs)
-		// Good.
-	default:
-		return nil, fmt.Errorf("Illegal frame size: %d bytes (%f ms)", frameSize, frameSizeMs)
-	}
-
-	data := make([]byte, 1000)
-
-	n, err := enc.Encode(pcm, data)
-	if err != nil {
-		return nil, err
-	}
-
-	data = data[:n]
 
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
