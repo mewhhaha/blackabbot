@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -220,8 +221,8 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 	}
 
 	i16 := make([]int16, len(pcm)/2)
-	for i := 0; i < len(pcm)/2; i++ {
-		i16 = append(i16, int16(uint16(pcm[i*2])|uint16(pcm[i*2+1])<<8))
+	for i := 0; i < len(pcm); i = i + 2 {
+		i16 = append(i16, int16(binary.LittleEndian.Uint16(pcm[i:i+1])))
 	}
 
 	panic(i16)
