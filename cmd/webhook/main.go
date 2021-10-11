@@ -226,8 +226,6 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	panic(data)
-
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 

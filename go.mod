@@ -38,6 +38,5 @@ require (
 
 require (
 	github.com/grd/ogg v0.0.0-20130623210630-0dae53159b70 // indirect
-	github.com/oov/audio v0.0.0-20171004131523-88a2be6dbe38
 	gopkg.in/hraban/opus.v2 v2.0.0-20210415224706-ab1467d63813 // indirect
 )
