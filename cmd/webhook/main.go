@@ -229,7 +229,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 
 	pcm := make([]int16, len(bs)/2)
 	for i := 0; i < len(bs)/2; i++ {
-		pcm = append(pcm, converter.ByteToInt16(bs[i*2], bs[i*2+1]))
+		pcm = append(pcm, converter.ByteToInt16(bs[i*2+1], bs[i*2]))
 	}
 
 	frameSize := len(pcm) // must be interleaved if stereo
