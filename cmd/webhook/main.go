@@ -194,7 +194,7 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
 		Body:        audio,
-		ContentType: aws.String("audio/mpeg"),
+		ContentType: aws.String("audio/ogg"),
 		ACL:         s3T.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
