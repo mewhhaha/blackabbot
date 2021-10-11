@@ -216,7 +216,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Channels:   1,
 		Bitrate:    24000,
 		FrameSize:  5,
-		Complexity: 0,
+		Complexity: 10,
 	}
 
 	stream.Flush()
