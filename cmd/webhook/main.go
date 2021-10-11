@@ -172,7 +172,7 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.R
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: format,
 		Text:         &text,
-		SampleRate:   aws.String("16000"),
+		SampleRate:   aws.String("8000"),
 		Engine:       pollyT.EngineNeural,
 		VoiceId:      voices[index],
 	}
@@ -212,7 +212,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	const sampleRate = 48000
+	const sampleRate = 8000
 	const channels = 1
 
 	enc, err := opus.NewEncoder(sampleRate, channels, opus.AppVoIP)
