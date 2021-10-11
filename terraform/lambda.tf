@@ -12,7 +12,7 @@ resource "null_resource" "webhook_image" {
   ]
 
   triggers = {
-    always_run = "${filebase64sha256("../cmd/webhook/main.go")}"
+    always_run = "${timestamp()}"
   }
 
   provisioner "local-exec" {
@@ -27,7 +27,13 @@ resource "null_resource" "webhook_image" {
   }
 }
 
-
+data "aws_ecr_image" "registry_webhook_image" {
+  depends_on = [
+    null_resource.webhook_image
+  ]
+  repository_name = aws_ecr_repository.blackabbot.name
+  image_tag       = "latest"
+}
 
 resource "aws_iam_role" "lambda_role" {
   name = "blackabbot-lambda-role"
@@ -45,9 +51,6 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 resource "aws_iam_policy" "lambda_policy" {
-  depends_on = [
-    null_resource.webhook_image
-  ]
   name = "blackabbot-lambda-policy"
 
   policy = jsonencode({
@@ -80,7 +83,7 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   function_name    = "blackab-telegram-bot"
   role             = aws_iam_role.lambda_role.arn
   package_type     = "Image"
-  source_code_hash = filebase64sha256("../cmd/webhook/main.go")
+  source_code_hash = data.aws_ecr_image.registry_webhook_image.id
   image_uri        = "${aws_ecr_repository.blackabbot.repository_url}:latest"
   timeout          = 15
 
