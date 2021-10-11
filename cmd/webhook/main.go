@@ -226,7 +226,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 
 	i16 := make([]int16, len(pcm)/2)
 	for i := 0; i < len(pcm); i = i + 2 {
-		i16 = append(i16, int16(binary.LittleEndian.Uint16(pcm[i:i+1])))
+		i16 = append(i16, int16(binary.LittleEndian.Uint16(pcm[i:i+2])))
 	}
 
 	data := make([]byte, 10000)
