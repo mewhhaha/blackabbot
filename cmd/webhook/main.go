@@ -212,7 +212,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	const sampleRate = 16000
+	const sampleRate = 48000
 	const channels = 1
 
 	enc, err := opus.NewEncoder(sampleRate, channels, opus.AppVoIP)
