@@ -73,6 +73,10 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 resource "aws_lambda_function" "blackabbot_lambda" {
+  depends_on = [
+    null_resource.webhook_image
+  ]
+
   function_name = "blackab-telegram-bot"
   role          = aws_iam_role.lambda_role.arn
   package_type  = "Image"
