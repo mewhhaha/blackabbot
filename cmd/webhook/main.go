@@ -229,13 +229,14 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 
 	pcm := make([]int16, len(bs)/2)
 	for i := 0; i < len(bs)/2; i++ {
-		pcm = append(pcm, converter.ByteToInt16(bs[i*2+1], bs[i*2]))
+		pcm = append(pcm, converter.ByteToInt16(bs[i*2], bs[i*2+1]))
 	}
 
 	frameSize := len(pcm) // must be interleaved if stereo
 	frameSizeMs := float32(frameSize) / channels * 1000 / sampleRate
 	switch frameSizeMs {
 	case 2.5, 5, 10, 20, 40, 60:
+		return nil, fmt.Errorf("Legal frame size: %d bytes (%f ms)", frameSize, frameSizeMs)
 		// Good.
 	default:
 		return nil, fmt.Errorf("Illegal frame size: %d bytes (%f ms)", frameSize, frameSizeMs)
