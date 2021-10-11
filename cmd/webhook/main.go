@@ -207,12 +207,15 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 }
 
 func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
-	pcm, err := ioutil.ReadAll(audio)
+	bs, err := ioutil.ReadAll(audio)
 	if err != nil {
 		return nil, err
 	}
 
-	enc, err := opus.NewEncoder(16000, 1, opus.AppVoIP)
+	const sampleRate = 48000
+	const channels = 1
+
+	enc, err := opus.NewEncoder(sampleRate, channels, opus.AppVoIP)
 	if err != nil {
 		return nil, err
 	}
@@ -224,14 +227,23 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 	// 	Complexity: 1,
 	// }
 
-	i16 := make([]int16, len(pcm)/2)
-	for i := 0; i < len(pcm)/2; i++ {
-		i16 = append(i16, converter.ByteToInt16(pcm[i*2], pcm[i*2+1]))
+	pcm := make([]int16, len(bs)/2)
+	for i := 0; i < len(bs)/2; i++ {
+		pcm = append(pcm, converter.ByteToInt16(bs[i*2], bs[i*2+1]))
+	}
+
+	frameSize := len(pcm) // must be interleaved if stereo
+	frameSizeMs := float32(frameSize) / channels * 1000 / sampleRate
+	switch frameSizeMs {
+	case 2.5, 5, 10, 20, 40, 60:
+		// Good.
+	default:
+		return nil, fmt.Errorf("Illegal frame size: %d bytes (%f ms)", frameSize, frameSizeMs)
 	}
 
 	data := make([]byte, 1000)
 
-	n, err := enc.Encode(i16, data)
+	n, err := enc.Encode(pcm, data)
 	if err != nil {
 		return nil, err
 	}
