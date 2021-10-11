@@ -219,8 +219,6 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Complexity: 10,
 	}
 
-	stream.Flush()
-
 	data, err := stream.EncodeBytes(pcm)
 	if err != nil {
 		return nil, err
@@ -232,8 +230,8 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 func trimText(t string) string {
 	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
 
-	if len(trim) > 140 {
-		return trim[0:140]
+	if len(trim) > 500 {
+		return trim[0:500]
 	} else {
 		return trim
 	}
