@@ -171,6 +171,7 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.R
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: format,
 		Text:         &text,
+		SampleRate:   aws.String("16000"),
 		Engine:       pollyT.EngineNeural,
 		VoiceId:      voices[index],
 	}
@@ -211,7 +212,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 	}
 
 	stream := &opus.OggStream{
-		SampleRate: 12000,
+		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    24000,
 		FrameSize:  20,
