@@ -224,6 +224,8 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		i16 = append(i16, int16(pcm[i*2])|int16(pcm[i*2+1])<<8)
 	}
 
+	panic(i16)
+
 	data, err := stream.Encode(i16)
 	if err != nil {
 		return nil, err
