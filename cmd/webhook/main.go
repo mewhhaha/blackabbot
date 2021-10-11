@@ -221,7 +221,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 
 	i16 := make([]int16, len(pcm)/2)
 	for i := 0; i < len(pcm)/2; i++ {
-		i16 = append(i16, int16(pcm[i*2])|int16(pcm[i*2+1])<<8)
+		i16 = append(i16, int16(uint16(pcm[i*2])|uint16(pcm[i*2+1])<<8))
 	}
 
 	panic(i16)
