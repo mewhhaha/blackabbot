@@ -103,26 +103,12 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return errorResponse(err, 500), nil
 	}
 
-	if result.InlineQuery != nil {
-		return handleInlineQuery(cfg, result), nil
-	}
-
 	if result.Message != nil && strings.HasPrefix(result.Message.Text, "@BlackAbbot ") {
 		return handleMessage(cfg, result), nil
 	}
 
 	return nopResponse(), nil
 
-}
-
-func handleInlineQuery(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
-	method := AnswerInlineQuery{
-		Method:        MethodAnswerInlineQuery,
-		InlineQueryId: update.InlineQuery.Id,
-		Results:       []InlineQueryResult{},
-	}
-
-	return jsonResponse(method)
 }
 
 func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
@@ -217,6 +203,10 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Bitrate:    192000,
 		FrameSize:  5,
 		Complexity: 10,
+	}
+
+	if len(pcm)/2 < int(stream.FrameSize) {
+		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
 
 	data, err := stream.EncodeBytes(pcm)
