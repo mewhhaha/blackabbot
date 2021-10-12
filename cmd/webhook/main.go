@@ -56,9 +56,6 @@ type InlineQuery struct {
 	Query string `json:"query"`
 }
 
-type InlineQueryResult struct {
-}
-
 type User struct {
 	Id        int32  `json:"id"`
 	FirstName string `json:"first_name"`
@@ -198,7 +195,8 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Complexity: 10,
 	}
 
-	if isUndersizedAudio(pcm, stream) {
+	return nil, fmt.Errorf("%d", len(pcm))
+	if isValidPcm(pcm, stream) {
 		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
 
@@ -221,7 +219,7 @@ func trimText(t string) string {
 	}
 }
 
-func isUndersizedAudio(pcm []byte, s *opus.OggStream) bool {
+func isValidPcm(pcm []byte, s *opus.OggStream) bool {
 	nSamples := func(fs float32) uint {
 		return uint(fs * float32(s.Channels*s.SampleRate/1000))
 	}
