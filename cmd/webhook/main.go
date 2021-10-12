@@ -202,7 +202,7 @@ func saveToStorage(cfg aws.Config, audio []byte) (*string, error) {
 
 func convertToOpus(pcm []byte) ([]byte, error) {
 	if isSilence(pcm) {
-		return []byte{}, nil
+		return nil, fmt.Errorf("The sound of silence!")
 	}
 
 	stream := &opus.OggStream{
