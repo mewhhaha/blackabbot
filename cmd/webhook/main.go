@@ -191,11 +191,13 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    192000,
-		FrameSize:  40,
+		FrameSize:  2.5,
 		Complexity: 10,
 	}
 
-	if isEmptyFrame(pcm) {
+	return nil, fmt.Errorf("%d %v", len(pcm), pcm)
+
+	if isEmptyPCM(pcm) {
 		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
 
@@ -218,7 +220,7 @@ func trimText(t string) string {
 	}
 }
 
-func isEmptyFrame(pcm []byte) bool {
+func isEmptyPCM(pcm []byte) bool {
 	return len(pcm) == 1024
 }
 
