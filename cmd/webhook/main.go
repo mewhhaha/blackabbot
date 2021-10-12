@@ -107,7 +107,7 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 		return handleInlineQuery(cfg, result), nil
 	}
 
-	if result.Message != nil && strings.HasPrefix(result.Message.Text, "@BlackAbbot") {
+	if result.Message != nil && strings.HasPrefix(result.Message.Text, "@BlackAbbot ") {
 		return handleMessage(cfg, result), nil
 	}
 
@@ -228,7 +228,7 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 }
 
 func trimText(t string) string {
-	const limit = 1
+	const limit = 140
 	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
 
 	if len(trim) > limit {
