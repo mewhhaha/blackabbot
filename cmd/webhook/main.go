@@ -191,11 +191,9 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    192000,
-		FrameSize:  5,
+		FrameSize:  40,
 		Complexity: 10,
 	}
-
-	pcm = pcm[:len(pcm)-(len(pcm)%int(stream.FrameSize*2))]
 
 	data, err := stream.EncodeBytes(pcm)
 	if err != nil {
@@ -214,17 +212,6 @@ func trimText(t string) string {
 	} else {
 		return trim
 	}
-}
-
-func isValidPcm(pcm []byte, s *opus.OggStream) bool {
-	nSamples := func(fs float32) uint {
-		return uint(fs * float32(s.Channels*s.SampleRate/1000))
-	}
-
-	minSamples := nSamples(opus.FrameSizes[len(opus.FrameSizes)-1])
-	samples := uint(len(pcm) / 2)
-
-	return samples < minSamples
 }
 
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
