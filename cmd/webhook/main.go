@@ -28,7 +28,8 @@ var bucket = os.Getenv("AUDIO_BUCKET")
 var botName = os.Getenv("TELEGRAM_BOT_NAME")
 
 const (
-	MethodSendVoice = "sendVoice"
+	MethodSendVoice   = "sendVoice"
+	MethodSendMessage = "sendMessage"
 )
 
 type MessageChat struct {
@@ -73,6 +74,12 @@ type SendVoiceMethodResponse struct {
 	Voice  string `json:"voice"`
 }
 
+type SendMessageMethodResponse struct {
+	Method string `json:"method"`
+	ChatId int64  `json:"chat_id"`
+	Text   string `json:"text"`
+}
+
 func main() {
 	runtime.Start(handleRequest)
 }
@@ -104,28 +111,36 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
 	text := trimText(update.Message.Text)
 
+	errorResponse := func(err error) events.APIGatewayProxyResponse {
+		return jsonResponse(SendMessageMethodResponse{
+			Method: MethodSendVoice,
+			ChatId: update.Message.Chat.Id,
+			Text:   err.Error(),
+		})
+	}
+
 	pcm, err := textToSpeech(cfg, text, pollyT.OutputFormatPcm)
 	if err != nil {
-		return errorResponse(err, 500)
+		return errorResponse(err)
 	}
 
 	audio, err := convertToOpus(pcm)
 	if err != nil {
-		return errorResponse(err, 500)
+		return errorResponse(err)
 	}
 
 	uri, err := saveToStorage(cfg, audio)
 	if err != nil {
-		return errorResponse(err, 500)
+		return errorResponse(err)
 	}
 
-	method := SendVoiceMethodResponse{
+	voiceResponse := SendVoiceMethodResponse{
 		Method: MethodSendVoice,
 		ChatId: update.Message.Chat.Id,
 		Voice:  *uri,
 	}
 
-	return jsonResponse(method)
+	return jsonResponse(voiceResponse)
 }
 
 func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.ReadCloser, error) {
@@ -154,8 +169,11 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.R
 
 	output, err := svc.SynthesizeSpeech(context.TODO(), input)
 	if err != nil {
-
 		return nil, fmt.Errorf("decompress %v: %w", "POLLY FAILED", err)
+	}
+
+	if output.RequestCharacters == 0 {
+		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
 
 	return output.AudioStream, nil
@@ -238,7 +256,7 @@ func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 }
 
 func errorResponse(err error, statusCode int) events.APIGatewayProxyResponse {
-	return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: statusCode}
+	return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 200}
 }
 
 func nopResponse() events.APIGatewayProxyResponse {
