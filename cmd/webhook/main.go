@@ -249,7 +249,7 @@ func nopResponse() events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{StatusCode: 200}
 }
 
-func isUndersizedAudio(pcm []byte, stream opus.OggStream) bool {
+func isUndersizedAudio(pcm []byte, stream *opus.OggStream) bool {
 	const minFrameSize = 2.5
 	minSamples := minFrameSize * float32(stream.SampleRate) / 1000
 	samples := float32(len(pcm) / 2)
