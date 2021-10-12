@@ -191,14 +191,11 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    192000,
-		FrameSize:  2.5,
+		FrameSize:  5,
 		Complexity: 10,
 	}
 
-	return nil, fmt.Errorf("%d", len(pcm))
-	if isValidPcm(pcm, stream) {
-		return io.NopCloser(bytes.NewReader([]byte{})), nil
-	}
+	pcm = pcm[:len(pcm)-(len(pcm)%int(stream.FrameSize*2))]
 
 	data, err := stream.EncodeBytes(pcm)
 	if err != nil {
