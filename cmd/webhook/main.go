@@ -228,10 +228,11 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 }
 
 func trimText(t string) string {
+	const limit = 140
 	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
 
-	if len(trim) > 500 {
-		return trim[0:500]
+	if len(trim) > limit {
+		return trim[0:limit]
 	} else {
 		return trim
 	}
