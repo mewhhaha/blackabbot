@@ -59,12 +59,6 @@ type InlineQuery struct {
 type InlineQueryResult struct {
 }
 
-type AnswerInlineQuery struct {
-	Method        string
-	InlineQueryId string              `json:"inline_query_id"`
-	Results       []InlineQueryResult `json:"results"`
-}
-
 type User struct {
 	Id        int32  `json:"id"`
 	FirstName string `json:"first_name"`
@@ -228,9 +222,12 @@ func trimText(t string) string {
 }
 
 func isUndersizedAudio(pcm []byte, s *opus.OggStream) bool {
-	const minFrameSize = 2.5
-	minSamples := minFrameSize * float32(s.Channels*s.SampleRate/1000)
-	samples := float32(len(pcm) / 2)
+	nSamples := func(fs float32) uint {
+		return uint(fs * float32(s.Channels*s.SampleRate/1000))
+	}
+
+	minSamples := nSamples(2.5)
+	samples := uint(len(pcm) / 2)
 
 	return samples < minSamples
 }
