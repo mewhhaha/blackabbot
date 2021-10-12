@@ -113,7 +113,7 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 
 	errorResponse := func(err error) events.APIGatewayProxyResponse {
 		return jsonResponse(SendMessageMethodResponse{
-			Method: MethodSendVoice,
+			Method: MethodSendMessage,
 			ChatId: update.Message.Chat.Id,
 			Text:   err.Error(),
 		})
@@ -143,7 +143,7 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 	return jsonResponse(voiceResponse)
 }
 
-func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.ReadCloser, error) {
+func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) ([]byte, error) {
 	svc := polly.NewFromConfig(cfg)
 
 	voices := []pollyT.VoiceId{
@@ -173,13 +173,18 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) (io.R
 	}
 
 	if output.RequestCharacters == 0 {
-		return io.NopCloser(bytes.NewReader([]byte{})), nil
+		return []byte{}, nil
 	}
 
-	return output.AudioStream, nil
+	pcm, err := ioutil.ReadAll(output.AudioStream)
+	if err != nil {
+		return nil, err
+	}
+
+	return pcm, nil
 }
 
-func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
+func saveToStorage(cfg aws.Config, audio []byte) (*string, error) {
 	svc := s3.NewFromConfig(cfg)
 	uploader := manager.NewUploader(svc)
 
@@ -188,7 +193,7 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
-		Body:        audio,
+		Body:        io.NopCloser(bytes.NewReader(audio)),
 		ContentType: aws.String("audio/ogg"),
 		ACL:         s3T.ObjectCannedACLPublicRead,
 	})
@@ -199,12 +204,7 @@ func saveToStorage(cfg aws.Config, audio io.ReadCloser) (*string, error) {
 	return &output.Location, nil
 }
 
-func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
-	pcm, err := ioutil.ReadAll(audio)
-	if err != nil {
-		return nil, err
-	}
-
+func convertToOpus(pcm []byte) ([]byte, error) {
 	stream := &opus.OggStream{
 		SampleRate: 16000,
 		Channels:   1,
@@ -213,18 +213,12 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Complexity: 10,
 	}
 
-	return nil, fmt.Errorf("%d %v", len(pcm), pcm)
-
-	if isEmptyPCM(pcm) {
-		return io.NopCloser(bytes.NewReader([]byte{})), nil
-	}
-
 	data, err := stream.EncodeBytes(pcm)
 	if err != nil {
 		return nil, err
 	}
 
-	return io.NopCloser(bytes.NewReader(data)), nil
+	return data, nil
 }
 
 func trimText(t string) string {
@@ -236,10 +230,6 @@ func trimText(t string) string {
 	} else {
 		return trim
 	}
-}
-
-func isEmptyPCM(pcm []byte) bool {
-	return len(pcm) == 1024
 }
 
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
