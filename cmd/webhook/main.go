@@ -226,7 +226,7 @@ func isUndersizedAudio(pcm []byte, s *opus.OggStream) bool {
 		return uint(fs * float32(s.Channels*s.SampleRate/1000))
 	}
 
-	minSamples := nSamples(2.5)
+	minSamples := nSamples(opus.FrameSizes[len(opus.FrameSizes)-1])
 	samples := uint(len(pcm) / 2)
 
 	return samples < minSamples
