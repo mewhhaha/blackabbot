@@ -195,6 +195,8 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Complexity: 10,
 	}
 
+	return nil, fmt.Errorf("%d %s", len(pcm), string(pcm))
+
 	if isEmptyFrame(pcm) {
 		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
