@@ -172,10 +172,6 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) ([]by
 		return nil, fmt.Errorf("decompress %v: %w", "POLLY FAILED", err)
 	}
 
-	if output.RequestCharacters == 0 {
-		return []byte{}, nil
-	}
-
 	pcm, err := ioutil.ReadAll(output.AudioStream)
 	if err != nil {
 		return nil, err
@@ -205,6 +201,10 @@ func saveToStorage(cfg aws.Config, audio []byte) (*string, error) {
 }
 
 func convertToOpus(pcm []byte) ([]byte, error) {
+	if isSilence(pcm) {
+		return []byte{}, nil
+	}
+
 	stream := &opus.OggStream{
 		SampleRate: 16000,
 		Channels:   1,
@@ -230,6 +230,15 @@ func trimText(t string) string {
 	} else {
 		return trim
 	}
+}
+
+func isSilence(audio []byte) bool {
+	for _, b := range audio {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
