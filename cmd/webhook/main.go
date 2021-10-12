@@ -201,11 +201,11 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    192000,
-		FrameSize:  5,
+		FrameSize:  2.5,
 		Complexity: 10,
 	}
 
-	if len(pcm)/2 < int(stream.FrameSize) {
+	if isUndersizedAudio(pcm, stream) {
 		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
 
@@ -247,4 +247,12 @@ func errorResponse(err error, statusCode int) events.APIGatewayProxyResponse {
 
 func nopResponse() events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{StatusCode: 200}
+}
+
+func isUndersizedAudio(pcm []byte, stream opus.OggStream) bool {
+	const minFrameSize = 2.5
+	minSamples := minFrameSize * float32(stream.SampleRate) / 1000
+	samples := float32(len(pcm) / 2)
+
+	return samples < minSamples
 }
