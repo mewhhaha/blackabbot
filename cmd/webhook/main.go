@@ -28,8 +28,7 @@ var bucket = os.Getenv("AUDIO_BUCKET")
 var botName = os.Getenv("TELEGRAM_BOT_NAME")
 
 const (
-	MethodSendVoice         = "sendVoice"
-	MethodAnswerInlineQuery = "answerInlineQuery"
+	MethodSendVoice = "sendVoice"
 )
 
 type MessageChat struct {
@@ -228,6 +227,14 @@ func trimText(t string) string {
 	}
 }
 
+func isUndersizedAudio(pcm []byte, s *opus.OggStream) bool {
+	const minFrameSize = 2.5
+	minSamples := minFrameSize * float32(s.Channels*s.SampleRate/1000)
+	samples := float32(len(pcm) / 2)
+
+	return samples < minSamples
+}
+
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 	body, err := json.Marshal(content)
 	if err != nil {
@@ -247,12 +254,4 @@ func errorResponse(err error, statusCode int) events.APIGatewayProxyResponse {
 
 func nopResponse() events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{StatusCode: 200}
-}
-
-func isUndersizedAudio(pcm []byte, stream *opus.OggStream) bool {
-	const minFrameSize = 2.5
-	minSamples := minFrameSize * float32(stream.SampleRate) / 1000
-	samples := float32(len(pcm) / 2)
-
-	return samples < minSamples
 }
