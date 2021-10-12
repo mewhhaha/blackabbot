@@ -195,8 +195,6 @@ func convertToOpus(audio io.ReadCloser) (io.ReadCloser, error) {
 		Complexity: 10,
 	}
 
-	return nil, fmt.Errorf("%d %s", len(pcm), string(pcm))
-
 	if isEmptyFrame(pcm) {
 		return io.NopCloser(bytes.NewReader([]byte{})), nil
 	}
@@ -221,7 +219,7 @@ func trimText(t string) string {
 }
 
 func isEmptyFrame(pcm []byte) bool {
-	return len(pcm) == 64
+	return len(pcm) == 1024
 }
 
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
