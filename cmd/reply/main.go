@@ -24,10 +24,16 @@ import (
 
 var botToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 var sendVoiceURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendVoice", botToken)
+var sendMessageURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
 
 type SendVoiceMethodResponse struct {
 	ChatId int64  `json:"chat_id"`
 	Voice  string `json:"voice"`
+}
+
+type SendMessageMethodResponse struct {
+	ChatId int64  `json:"chat_id"`
+	Text   string `json:"text"`
 }
 
 func main() {
@@ -35,11 +41,6 @@ func main() {
 }
 
 func handleRequest(ctx context.Context, request events.S3Event) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-1"))
-	if err != nil {
-		return err
-	}
-
 	record := request.Records[0]
 	bucket := record.S3.Bucket.Name
 	key := record.S3.Object.Key
@@ -49,33 +50,27 @@ func handleRequest(ctx context.Context, request events.S3Event) error {
 		return err
 	}
 
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-1"))
+	if err != nil {
+		return sendErrorResponse(chatId, err)
+	}
+
 	pcm, err := getFromStorage(cfg, bucket, key)
 	if err != nil {
-		return err
+		return sendErrorResponse(chatId, err)
 	}
 
 	audio, err := convertToOpus(pcm)
 	if err != nil {
-		return err
+		return sendErrorResponse(chatId, err)
 	}
 
 	uri, err := saveToStorage(cfg, bucket, key, audio)
 	if err != nil {
-		return err
+		return sendErrorResponse(chatId, err)
 	}
 
-	voiceResponse := SendVoiceMethodResponse{
-		ChatId: chatId,
-		Voice:  *uri,
-	}
-
-	body, err := json.Marshal(voiceResponse)
-	if err != nil {
-		return err
-	}
-
-	_, err = http.Post(sendVoiceURL, "application/json", bytes.NewReader(body))
-	return err
+	return sendVoiceResponse(chatId, *uri)
 }
 
 func getFromStorage(cfg aws.Config, bucket string, key string) ([]byte, error) {
@@ -119,7 +114,7 @@ func convertToOpus(pcm []byte) ([]byte, error) {
 		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    192000,
-		FrameSize:  20,
+		FrameSize:  2.5,
 		Complexity: 10,
 	}
 
@@ -138,4 +133,34 @@ func isSilence(audio []byte) bool {
 		}
 	}
 	return true
+}
+
+func sendVoiceResponse(chatId int64, uri string) error {
+	voiceResponse := SendVoiceMethodResponse{
+		ChatId: chatId,
+		Voice:  uri,
+	}
+
+	body, err := json.Marshal(voiceResponse)
+	if err != nil {
+		return err
+	}
+
+	_, err = http.Post(sendVoiceURL, "application/json", bytes.NewReader(body))
+	return err
+}
+
+func sendErrorResponse(chatId int64, err error) error {
+	messageResponse := SendMessageMethodResponse{
+		ChatId: chatId,
+		Text:   err.Error(),
+	}
+
+	body, err := json.Marshal(messageResponse)
+	if err != nil {
+		return err
+	}
+
+	_, err = http.Post(sendVoiceURL, "application/json", bytes.NewReader(body))
+	return err
 }
