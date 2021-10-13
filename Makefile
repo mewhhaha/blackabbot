@@ -1,7 +1,7 @@
 CURRENT_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR := $(dir $(CURRENT_PATH))
 
-.PHONY: dependencies docker/build build build/% deploy clean
+.PHONY: dependencies build build/% deploy clean
 
 dependencies:
 	go mod download
