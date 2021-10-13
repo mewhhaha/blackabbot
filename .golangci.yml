@@ -1,0 +1,24 @@
+linters: 
+  presets: 
+    - bugs
+    - complexity
+    - performance
+    - format
+    - import
+    - style
+    - unused
+    - metalinter
+    - module
+  disable: 
+    - tagliatelle
+    - exhaustivestruct
+    - gochecknoglobals
+    - gofumpt
+    - wrapcheck
+    - noctx
+    - gomnd
+
+linters-settings:
+  gosec:
+    excludes:
+        - G404

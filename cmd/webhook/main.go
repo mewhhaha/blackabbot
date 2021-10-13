@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 
@@ -24,12 +25,12 @@ const (
 )
 
 type MessageChat struct {
-	Id int64 `json:"id"`
+	ID int64 `json:"id"`
 }
 
 type MessageFrom struct {
 	LastName  string `json:"last_name"`
-	Id        int64  `json:"id"`
+	ID        int64  `json:"id"`
 	FirstName string `json:"first_name"`
 	Username  string `json:"username"`
 }
@@ -37,31 +38,31 @@ type MessageFrom struct {
 type Message struct {
 	Date      int64       `json:"date"`
 	Chat      MessageChat `json:"chat"`
-	MessageId int64       `json:"message_id"`
+	MessageID int64       `json:"message_id"`
 	From      MessageFrom `json:"from"`
 	Text      string      `json:"text"`
 }
 
 type InlineQuery struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	From  User   `json:"from"`
 	Query string `json:"query"`
 }
 
 type User struct {
-	Id        int32  `json:"id"`
+	ID        int32  `json:"id"`
 	FirstName string `json:"first_name"`
 }
 
 type Update struct {
-	UpdateId    int64        `json:"update_id"`
+	UpdateID    int64        `json:"update_id"`
 	Message     *Message     `json:"message"`
 	InlineQuery *InlineQuery `json:"inline_query"`
 }
 
 type SendMessageWebhookResponse struct {
 	Method string `json:"method"`
-	ChatId int64  `json:"chat_id"`
+	ChatID int64  `json:"chat_id"`
 	Text   string `json:"text"`
 }
 
@@ -71,6 +72,7 @@ func main() {
 
 func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	result := &Update{}
+
 	err := json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
 		return errorResponse(err), nil
@@ -90,14 +92,13 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 	}
 
 	return nopResponse(), nil
-
 }
 
 func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
 	errorResponse := func(err error) events.APIGatewayProxyResponse {
 		return jsonResponse(SendMessageWebhookResponse{
 			Method: MethodSendMessage,
-			ChatId: update.Message.Chat.Id,
+			ChatID: update.Message.Chat.ID,
 			Text:   err.Error(),
 		})
 	}
@@ -116,7 +117,7 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 		pollyT.VoiceIdJoey,
 	}
 	index := rand.Intn(len(voices))
-	prefix := fmt.Sprintf("%d/", update.Message.Chat.Id)
+	prefix := fmt.Sprintf("%d/", update.Message.Chat.ID)
 	text := trimText(update.Message.Text)
 
 	input := &polly.StartSpeechSynthesisTaskInput{
@@ -139,13 +140,14 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 
 func trimText(t string) string {
 	const limit = 1000
+
 	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
 
 	if len(trim) > limit {
 		return trim[0:limit]
-	} else {
-		return trim
 	}
+
+	return trim
 }
 
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
@@ -157,14 +159,14 @@ func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{
 		Body:       string(body),
 		Headers:    map[string]string{"Content-Type": "application/json"},
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 	}
 }
 
 func errorResponse(err error) events.APIGatewayProxyResponse {
-	return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 200}
+	return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: http.StatusOK}
 }
 
 func nopResponse() events.APIGatewayProxyResponse {
-	return events.APIGatewayProxyResponse{StatusCode: 200}
+	return events.APIGatewayProxyResponse{StatusCode: http.StatusOK}
 }

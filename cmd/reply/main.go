@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,17 +23,17 @@ import (
 	"github.com/digital-dream-labs/opus-go/opus"
 )
 
+var errSilence = errors.New("exclusively empty bytes in pcm")
+
 var botToken = os.Getenv("TELEGRAM_BOT_TOKEN")
-var sendVoiceURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendVoice", botToken)
-var sendMessageURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
 
 type SendVoiceMethodResponse struct {
-	ChatId int64  `json:"chat_id"`
+	ChatID int64  `json:"chat_id"`
 	Voice  string `json:"voice"`
 }
 
 type SendMessageMethodResponse struct {
-	ChatId int64  `json:"chat_id"`
+	ChatID int64  `json:"chat_id"`
 	Text   string `json:"text"`
 }
 
@@ -45,32 +46,32 @@ func handleRequest(ctx context.Context, request events.S3Event) error {
 	bucket := record.S3.Bucket.Name
 	key := record.S3.Object.Key
 
-	chatId, err := strconv.ParseInt(strings.Split(key, "/")[0], 10, 64)
+	chatID, err := strconv.ParseInt(strings.Split(key, "/")[0], 10, 64)
 	if err != nil {
 		return err
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-1"))
 	if err != nil {
-		return sendErrorResponse(chatId, err)
+		return sendErrorResponse(chatID, err)
 	}
 
 	pcm, err := getFromStorage(cfg, bucket, key)
 	if err != nil {
-		return sendErrorResponse(chatId, err)
+		return sendErrorResponse(chatID, err)
 	}
 
 	audio, err := convertToOpus(pcm)
 	if err != nil {
-		return sendErrorResponse(chatId, err)
+		return sendErrorResponse(chatID, err)
 	}
 
 	uri, err := saveToStorage(cfg, bucket, key, audio)
 	if err != nil {
-		return sendErrorResponse(chatId, err)
+		return sendErrorResponse(chatID, err)
 	}
 
-	return sendVoiceResponse(chatId, *uri)
+	return sendVoiceResponse(chatID, *uri)
 }
 
 func getFromStorage(cfg aws.Config, bucket string, key string) ([]byte, error) {
@@ -107,7 +108,7 @@ func saveToStorage(cfg aws.Config, bucket string, key string, audio []byte) (*st
 
 func convertToOpus(pcm []byte) ([]byte, error) {
 	if isSilence(pcm) {
-		return nil, fmt.Errorf("The sound of silence!")
+		return nil, errSilence
 	}
 
 	stream := &opus.OggStream{
@@ -132,12 +133,13 @@ func isSilence(audio []byte) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
-func sendVoiceResponse(chatId int64, uri string) error {
+func sendVoiceResponse(chatID int64, uri string) error {
 	voiceResponse := SendVoiceMethodResponse{
-		ChatId: chatId,
+		ChatID: chatID,
 		Voice:  uri,
 	}
 
@@ -146,13 +148,22 @@ func sendVoiceResponse(chatId int64, uri string) error {
 		return err
 	}
 
-	_, err = http.Post(sendVoiceURL, "application/json", bytes.NewReader(body))
-	return err
+	res, err := http.Post(
+		fmt.Sprintf("https://api.telegram.org/bot%s/sendVoice", botToken),
+		"application/json",
+		bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	res.Body.Close()
+
+	return nil
 }
 
-func sendErrorResponse(chatId int64, err error) error {
+func sendErrorResponse(chatID int64, err error) error {
 	messageResponse := SendMessageMethodResponse{
-		ChatId: chatId,
+		ChatID: chatID,
 		Text:   err.Error(),
 	}
 
@@ -161,6 +172,15 @@ func sendErrorResponse(chatId int64, err error) error {
 		return err
 	}
 
-	_, err = http.Post(sendMessageURL, "application/json", bytes.NewReader(body))
-	return err
+	res, err := http.Post(
+		fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken),
+		"application/json",
+		bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	res.Body.Close()
+
+	return nil
 }
