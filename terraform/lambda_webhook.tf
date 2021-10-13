@@ -1,6 +1,14 @@
+resource "aws_ecr_repository" "webhook" {
+  name = "webhook"
+}
+
+data "aws_ecr_authorization_token" "webhook" {
+  registry_id = aws_ecr_repository.webhook.registry_id
+}
+
 resource "null_resource" "webhook_image" {
   depends_on = [
-    null_resource.docker_login
+    data.aws_ecr_authorization_token.webhook
   ]
 
   triggers = {
@@ -9,9 +17,12 @@ resource "null_resource" "webhook_image" {
 
   provisioner "local-exec" {
     command = <<EOF
-          export TARGET_IMAGE="${aws_ecr_repository.blackabbot.repository_url}/${var.webhook_image_id}"
-          docker tag ${var.webhook_image_id} $TARGET_IMAGE:latest
-          docker push $TARGET_IMAGE:latest
+          docker login \
+                  -u ${data.aws_ecr_authorization_token.webhook.user_name} \
+                  -p ${data.aws_ecr_authorization_token.webhook.password} \
+                  ${aws_ecr_repository.webhook.repository_url}
+          docker tag ${var.webhook_image_id} ${aws_ecr_repository.webhook.repository_url}:latest
+          docker push ${aws_ecr_repository.webhook.repository_url}:latest
     EOF
   }
 }
@@ -20,7 +31,7 @@ data "aws_ecr_image" "registry_webhook_image" {
   depends_on = [
     null_resource.webhook_image
   ]
-  repository_name = aws_ecr_repository.blackabbot.name
+  repository_name = aws_ecr_repository.webhook.name
   image_tag       = "latest"
 }
 
@@ -68,7 +79,7 @@ resource "aws_lambda_function" "webhook_lambda" {
   role             = aws_iam_role.webhook_lambda_role.arn
   package_type     = "Image"
   source_code_hash = data.aws_ecr_image.registry_webhook_image.id
-  image_uri        = "${aws_ecr_repository.blackabbot.repository_url}/${var.webhook_image_id}:latest"
+  image_uri        = "${aws_ecr_repository.webhook.repository_url}:latest"
   timeout          = 120
 
 
