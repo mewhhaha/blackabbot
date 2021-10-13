@@ -119,7 +119,7 @@ func convertToOpus(pcm []byte) ([]byte, error) {
 		SampleRate: 16000,
 		Channels:   1,
 		Bitrate:    192000,
-		FrameSize:  2.5,
+		FrameSize:  20,
 		Complexity: 10,
 	}
 
