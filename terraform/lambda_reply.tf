@@ -57,11 +57,12 @@ resource "aws_iam_policy" "reply_lambda_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid : "S3"
+        Sid : "S3",
         Action : ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl"],
         Effect : "Allow",
         Resource : "arn:aws:s3:::${aws_s3_bucket.audio_bucket.bucket}/*"
-    }]
+      }
+    ]
   })
 }
 
@@ -85,6 +86,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
   lambda_function {
     lambda_function_arn = aws_lambda_function.reply_lambda.arn
     events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = ".pcm"
   }
 }
 

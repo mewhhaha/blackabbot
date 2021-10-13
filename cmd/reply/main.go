@@ -98,7 +98,7 @@ func saveToStorage(cfg aws.Config, bucket string, key string, audio []byte) (*st
 
 	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
-		Key:         aws.String(key),
+		Key:         aws.String(strings.Replace(key, ".pcm", ".ogg", 1)),
 		Body:        io.NopCloser(bytes.NewReader(audio)),
 		ContentType: aws.String("audio/ogg"),
 		ACL:         s3T.ObjectCannedACLPublicRead,

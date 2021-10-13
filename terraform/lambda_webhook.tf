@@ -61,7 +61,14 @@ resource "aws_iam_policy" "webhook_lambda_policy" {
         Action : ["polly:*"],
         Effect : "Allow",
         Resource : "*"
-    }]
+      },
+      {
+        Sid : "S3",
+        Action : ["s3:PutObject"],
+        Effect : "Allow",
+        Resource : "arn:aws:s3:::${aws_s3_bucket.audio_bucket.bucket}/*"
+      }
+    ]
   })
 }
 
