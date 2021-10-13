@@ -138,7 +138,7 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 }
 
 func trimText(t string) string {
-	const limit = 140
+	const limit = 1000
 	trim := strings.TrimPrefix(t, fmt.Sprintf("%s ", botName))
 
 	if len(trim) > limit {
