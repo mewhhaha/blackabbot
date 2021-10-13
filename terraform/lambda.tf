@@ -85,7 +85,7 @@ resource "aws_lambda_function" "blackabbot_lambda" {
   package_type     = "Image"
   source_code_hash = data.aws_ecr_image.registry_webhook_image.id
   image_uri        = "${aws_ecr_repository.blackabbot.repository_url}:latest"
-  timeout          = 15
+  timeout          = 120
 
 
   environment {
