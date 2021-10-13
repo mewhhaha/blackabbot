@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"strings"
@@ -15,20 +12,14 @@ import (
 	runtime "github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/polly"
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/digital-dream-labs/opus-go/opus"
-	"github.com/google/uuid"
 )
 
 var bucket = os.Getenv("AUDIO_BUCKET")
 var botName = os.Getenv("TELEGRAM_BOT_NAME")
 
 const (
-	MethodSendVoice   = "sendVoice"
 	MethodSendMessage = "sendMessage"
 )
 
@@ -68,13 +59,7 @@ type Update struct {
 	InlineQuery *InlineQuery `json:"inline_query"`
 }
 
-type SendVoiceMethodResponse struct {
-	Method string `json:"method"`
-	ChatId int64  `json:"chat_id"`
-	Voice  string `json:"voice"`
-}
-
-type SendMessageMethodResponse struct {
+type SendMessageWebhookResponse struct {
 	Method string `json:"method"`
 	ChatId int64  `json:"chat_id"`
 	Text   string `json:"text"`
@@ -84,20 +69,20 @@ func main() {
 	runtime.Start(handleRequest)
 }
 
-func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (resp events.APIGatewayProxyResponse, err error) {
+func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	result := &Update{}
-	err = json.Unmarshal([]byte(request.Body), result)
+	err := json.Unmarshal([]byte(request.Body), result)
 	if err != nil {
-		return errorResponse(err, 400), nil
+		return errorResponse(err), nil
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-1"))
 	if err != nil {
-		return errorResponse(err, 500), nil
+		return errorResponse(err), nil
 	}
 
 	if err != nil {
-		return errorResponse(err, 500), nil
+		return errorResponse(err), nil
 	}
 
 	if result.Message != nil && strings.HasPrefix(result.Message.Text, "@BlackAbbot ") {
@@ -109,41 +94,14 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyResponse {
-	text := trimText(update.Message.Text)
-
 	errorResponse := func(err error) events.APIGatewayProxyResponse {
-		return jsonResponse(SendMessageMethodResponse{
+		return jsonResponse(SendMessageWebhookResponse{
 			Method: MethodSendMessage,
 			ChatId: update.Message.Chat.Id,
 			Text:   err.Error(),
 		})
 	}
 
-	pcm, err := textToSpeech(cfg, text, pollyT.OutputFormatPcm)
-	if err != nil {
-		return errorResponse(err)
-	}
-
-	audio, err := convertToOpus(pcm)
-	if err != nil {
-		return errorResponse(err)
-	}
-
-	uri, err := saveToStorage(cfg, audio)
-	if err != nil {
-		return errorResponse(err)
-	}
-
-	voiceResponse := SendVoiceMethodResponse{
-		Method: MethodSendVoice,
-		ChatId: update.Message.Chat.Id,
-		Voice:  *uri,
-	}
-
-	return jsonResponse(voiceResponse)
-}
-
-func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) ([]byte, error) {
 	svc := polly.NewFromConfig(cfg)
 
 	voices := []pollyT.VoiceId{
@@ -158,67 +116,25 @@ func textToSpeech(cfg aws.Config, text string, format pollyT.OutputFormat) ([]by
 		pollyT.VoiceIdJoey,
 	}
 	index := rand.Intn(len(voices))
+	prefix := fmt.Sprintf("%d/", update.Message.Chat.Id)
+	text := trimText(update.Message.Text)
 
-	input := &polly.SynthesizeSpeechInput{
-		OutputFormat: format,
-		Text:         &text,
-		SampleRate:   aws.String("16000"),
-		Engine:       pollyT.EngineNeural,
-		VoiceId:      voices[index],
+	input := &polly.StartSpeechSynthesisTaskInput{
+		OutputFormat:       pollyT.OutputFormatPcm,
+		Text:               &text,
+		SampleRate:         aws.String("16000"),
+		Engine:             pollyT.EngineNeural,
+		VoiceId:            voices[index],
+		OutputS3BucketName: &bucket,
+		OutputS3KeyPrefix:  aws.String(prefix),
 	}
 
-	output, err := svc.SynthesizeSpeech(context.TODO(), input)
+	_, err := svc.StartSpeechSynthesisTask(context.TODO(), input)
 	if err != nil {
-		return nil, fmt.Errorf("decompress %v: %w", "POLLY FAILED", err)
+		return errorResponse(err)
 	}
 
-	pcm, err := ioutil.ReadAll(output.AudioStream)
-	if err != nil {
-		return nil, err
-	}
-
-	return pcm, nil
-}
-
-func saveToStorage(cfg aws.Config, audio []byte) (*string, error) {
-	svc := s3.NewFromConfig(cfg)
-	uploader := manager.NewUploader(svc)
-
-	filename := uuid.New().String()
-
-	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
-		Bucket:      aws.String(bucket),
-		Key:         aws.String(filename),
-		Body:        io.NopCloser(bytes.NewReader(audio)),
-		ContentType: aws.String("audio/ogg"),
-		ACL:         s3T.ObjectCannedACLPublicRead,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("decompress %v: %w", "S3 FAILED", err)
-	}
-
-	return &output.Location, nil
-}
-
-func convertToOpus(pcm []byte) ([]byte, error) {
-	if isSilence(pcm) {
-		return nil, fmt.Errorf("The sound of silence!")
-	}
-
-	stream := &opus.OggStream{
-		SampleRate: 16000,
-		Channels:   1,
-		Bitrate:    192000,
-		FrameSize:  2.5,
-		Complexity: 10,
-	}
-
-	data, err := stream.EncodeBytes(pcm)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return nopResponse()
 }
 
 func trimText(t string) string {
@@ -232,19 +148,10 @@ func trimText(t string) string {
 	}
 }
 
-func isSilence(audio []byte) bool {
-	for _, b := range audio {
-		if b != 0 {
-			return false
-		}
-	}
-	return true
-}
-
 func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 	body, err := json.Marshal(content)
 	if err != nil {
-		return errorResponse(err, 500)
+		return errorResponse(err)
 	}
 
 	return events.APIGatewayProxyResponse{
@@ -254,7 +161,7 @@ func jsonResponse(content interface{}) events.APIGatewayProxyResponse {
 	}
 }
 
-func errorResponse(err error, statusCode int) events.APIGatewayProxyResponse {
+func errorResponse(err error) events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 200}
 }
 

@@ -39,8 +39,6 @@ github.com/digital-dream-labs/opus-go v0.0.0-20201230195736-934a8a9e0a1e/go.mod 
 github.com/google/go-cmp v0.5.4/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
-github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
-github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/grd/ogg v0.0.0-20130623210630-0dae53159b70 h1:BbrcLhyNM9P1UAZnPBomiAvDv7WEIJy+sfrJItfSUL8=
 github.com/grd/ogg v0.0.0-20130623210630-0dae53159b70/go.mod h1:K8T3jGUZQeKP7y1e801QDZAB53F6Lpt+NgnwAZTxwrg=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=

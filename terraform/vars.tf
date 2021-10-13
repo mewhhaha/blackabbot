@@ -3,8 +3,14 @@ variable "telegram_bot_token" {
 }
 
 variable "webhook_image_id" {
-  type = string
+  default = "webhook"
+  type    = string
 }
+variable "reply_image_id" {
+  default = "reply"
+  type    = string
+}
+
 
 variable "telegram_bot_name" {
   type    = string

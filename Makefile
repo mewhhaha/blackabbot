@@ -6,11 +6,11 @@ CURRENT_DIR := $(dir $(CURRENT_PATH))
 dependencies:
 	go mod download
 
-build: clean build/webhook
+build: clean build/webhook build/reply
 
 build/%:
 	docker build . \
-		--tag blackabbot-$* \
+		--tag $* \
 		--build-arg CMD_NAME=$* \
 		-f  ./tools/Dockerfile
 

@@ -4,10 +4,7 @@ go 1.17
 
 require github.com/aws/aws-lambda-go v1.27.0
 
-require (
-	github.com/aws/aws-sdk-go-v2 v1.9.1
-	github.com/google/uuid v1.3.0
-)
+require github.com/aws/aws-sdk-go-v2 v1.9.1
 
 require (
 	github.com/aws/aws-sdk-go-v2/service/polly v1.6.1
