@@ -24,7 +24,6 @@ import (
 )
 
 var errSilence = errors.New("exclusively empty bytes in pcm")
-
 var botToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 
 type SendVoiceMethodResponse struct {
