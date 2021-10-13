@@ -11,8 +11,9 @@ resource "null_resource" "reply_image" {
 
   provisioner "local-exec" {
     command = <<EOF
-          docker tag ${var.reply_image_id} ${aws_ecr_repository.blackabbot.repository_url}/${var.reply_image_id}:latest
-          docker push ${aws_ecr_repository.blackabbot.repository_url}:latest
+          export TARGET_IMAGE="${aws_ecr_repository.blackabbot.repository_url}/${var.reply_image_id}"
+          docker tag ${var.reply_image_id} TARGET_IMAGE:latest
+          docker push TARGET_IMAGE:latest
     EOF
   }
 }
