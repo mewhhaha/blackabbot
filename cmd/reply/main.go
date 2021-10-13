@@ -22,9 +22,8 @@ import (
 	"github.com/digital-dream-labs/opus-go/opus"
 )
 
-var bucket = os.Getenv("AUDIO_BUCKET")
 var botToken = os.Getenv("TELEGRAM_BOT_TOKEN")
-var sendMessageURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
+var sendVoiceURL = fmt.Sprintf("https://api.telegram.org/bot%s/sendVoice", botToken)
 
 type SendVoiceMethodResponse struct {
 	ChatId int64  `json:"chat_id"`
@@ -75,7 +74,7 @@ func handleRequest(ctx context.Context, request events.S3Event) error {
 		return err
 	}
 
-	_, err = http.Post(sendMessageURL, "application/json", bytes.NewReader(body))
+	_, err = http.Post(sendVoiceURL, "application/json", bytes.NewReader(body))
 	return err
 }
 
