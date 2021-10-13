@@ -161,6 +161,6 @@ func sendErrorResponse(chatId int64, err error) error {
 		return err
 	}
 
-	_, err = http.Post(sendVoiceURL, "application/json", bytes.NewReader(body))
+	_, err = http.Post(sendMessageURL, "application/json", bytes.NewReader(body))
 	return err
 }
