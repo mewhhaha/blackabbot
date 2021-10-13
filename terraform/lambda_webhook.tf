@@ -65,7 +65,7 @@ resource "aws_iam_policy" "webhook_lambda_policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "reply_lambda_attach" {
+resource "aws_iam_role_policy_attachment" "webhook_lambda_attach" {
   role       = aws_iam_role.webhook_lambda_role.name
   policy_arn = aws_iam_policy.webhook_lambda_policy.arn
 }

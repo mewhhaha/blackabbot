@@ -58,16 +58,34 @@ resource "aws_iam_policy" "reply_lambda_policy" {
     Statement = [
       {
         Sid : "S3"
-        Action : ["s3:PutObject", "s3:PutObjectAcl"],
+        Action : ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl"],
         Effect : "Allow",
         Resource : "arn:aws:s3:::${aws_s3_bucket.audio_bucket.bucket}/*"
     }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "webhook_lambda_attach" {
+resource "aws_iam_role_policy_attachment" "reply_lambda_attach" {
   role       = aws_iam_role.reply_lambda_role.name
   policy_arn = aws_iam_policy.reply_lambda_policy.arn
+}
+
+
+resource "aws_lambda_permission" "allow_bucket" {
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.reply_lambda.arn
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.audio_bucket.arn
+}
+
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  bucket = aws_s3_bucket.audio_bucket.bucket
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.reply_lambda.arn
+    events              = ["s3:ObjectCreated:*"]
+  }
 }
 
 resource "aws_lambda_function" "reply_lambda" {
