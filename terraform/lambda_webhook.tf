@@ -10,8 +10,8 @@ resource "null_resource" "webhook_image" {
   provisioner "local-exec" {
     command = <<EOF
           export TARGET_IMAGE="${aws_ecr_repository.blackabbot.repository_url}/${var.webhook_image_id}"
-          docker tag ${var.webhook_image_id} TARGET_IMAGE:latest
-          docker push TARGET_IMAGE:latest
+          docker tag ${var.webhook_image_id} $TARGET_IMAGE:latest
+          docker push $TARGET_IMAGE:latest
     EOF
   }
 }
