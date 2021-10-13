@@ -38,4 +38,3 @@ jobs:
         run: make deploy
         env:
           TF_VAR_telegram_bot_token: ${{ secrets.BOT_API_KEY }}
-          TF_VAR_webhook_image_id: blackabbot-webhook
