@@ -149,8 +149,10 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 			return errorResponse(err)
 		}
 
-		saveToStorage(cfg, output.AudioStream, input)
-
+		err = saveToStorage(cfg, output.AudioStream, input)
+		if err != nil {
+			return errorResponse(err)
+		}
 	}
 
 	return nopResponse()
@@ -201,21 +203,17 @@ func toSyncTask(i *polly.StartSpeechSynthesisTaskInput) *polly.SynthesizeSpeechI
 	return &sync
 }
 
-func saveToStorage(cfg aws.Config, audio io.ReadCloser, input *polly.StartSpeechSynthesisTaskInput) (*string, error) {
+func saveToStorage(cfg aws.Config, audio io.ReadCloser, input *polly.StartSpeechSynthesisTaskInput) error {
 	svc := s3.NewFromConfig(cfg)
 	uploader := manager.NewUploader(svc)
 	filename := fmt.Sprintf("%s.%s.pcm", *input.OutputS3KeyPrefix, uuid.New().String())
 
-	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
+	_, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(filename),
 		Body:        audio,
 		ContentType: aws.String("audio/pcm"),
 		ACL:         s3T.ObjectCannedACLPublicRead,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &output.Location, nil
+	return err
 }
