@@ -34,6 +34,7 @@ require (
 )
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/grd/ogg v0.0.0-20130623210630-0dae53159b70 // indirect
 	gopkg.in/hraban/opus.v2 v2.0.0-20210415224706-ab1467d63813 // indirect
 )

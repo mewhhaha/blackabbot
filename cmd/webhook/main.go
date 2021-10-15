@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -13,9 +14,15 @@ import (
 	runtime "github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/polly"
 	pollyT "github.com/aws/aws-sdk-go-v2/service/polly/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3T "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/google/uuid"
 )
+
+const syncTaskLimit = 140
 
 var bucket = os.Getenv("AUDIO_BUCKET")
 var botName = os.Getenv("TELEGRAM_BOT_NAME")
@@ -117,7 +124,7 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 		pollyT.VoiceIdJoey,
 	}
 	index := rand.Intn(len(voices))
-	prefix := fmt.Sprintf("%d/", update.Message.Chat.ID)
+	prefix := fmt.Sprintf("%d/voice", update.Message.Chat.ID)
 	text := trimText(update.Message.Text)
 
 	input := &polly.StartSpeechSynthesisTaskInput{
@@ -130,12 +137,24 @@ func handleMessage(cfg aws.Config, update *Update) events.APIGatewayProxyRespons
 		OutputS3KeyPrefix:  aws.String(prefix),
 	}
 
-	_, err := svc.StartSpeechSynthesisTask(context.TODO(), input)
-	if err != nil {
-		return errorResponse(err)
+	if len(text) > syncTaskLimit {
+		_, err := svc.StartSpeechSynthesisTask(context.TODO(), input)
+		if err != nil {
+			return errorResponse(err)
+		}
+
+	} else {
+		output, err := svc.SynthesizeSpeech(context.TODO(), toSyncTask(input))
+		if err != nil {
+			return errorResponse(err)
+		}
+
+		saveToStorage(cfg, output.AudioStream, input)
+
 	}
 
 	return nopResponse()
+
 }
 
 func trimText(t string) string {
@@ -169,4 +188,34 @@ func errorResponse(err error) events.APIGatewayProxyResponse {
 
 func nopResponse() events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{StatusCode: http.StatusOK}
+}
+
+func toSyncTask(i *polly.StartSpeechSynthesisTaskInput) *polly.SynthesizeSpeechInput {
+	sync := polly.SynthesizeSpeechInput{
+		OutputFormat: i.OutputFormat,
+		Text:         i.Text,
+		SampleRate:   i.SampleRate,
+		Engine:       i.Engine,
+		VoiceId:      i.VoiceId,
+	}
+	return &sync
+}
+
+func saveToStorage(cfg aws.Config, audio io.ReadCloser, input *polly.StartSpeechSynthesisTaskInput) (*string, error) {
+	svc := s3.NewFromConfig(cfg)
+	uploader := manager.NewUploader(svc)
+	filename := fmt.Sprintf("%s.%s.pcm", *input.OutputS3KeyPrefix, uuid.New().String())
+
+	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(bucket),
+		Key:         aws.String(filename),
+		Body:        audio,
+		ContentType: aws.String("audio/pcm"),
+		ACL:         s3T.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &output.Location, nil
 }
